@@ -1,5 +1,48 @@
 <template>
   <div class="home">
+    <div class="terminal-header">
+      <div class="terminal-bar">
+        <span class="terminal-buttons">
+          <span class="terminal-circle red"></span>
+          <span class="terminal-circle yellow"></span>
+          <span class="terminal-circle green"></span>
+        </span>
+        <span class="terminal-title">[CLASSIFIED]_v1.0</span>
+      </div>
+      <div class="terminal-content">
+        <span class="prompt">$</span>
+        <span class="command">./access_[REDACTED]</span>
+        <span class="response">
+          <span class="redacted">████████</span> protocol initialized...
+          <br>
+          clearance level: <span class="highlight">ALPHA</span>
+          <br>
+          <span class="warning">ACCESS REQUIREMENTS:</span>
+          <br>
+          <span class="requirement"> WARP BOI NFT</span>
+          <span class="requirement"> TREK ACCESS CHIT</span>
+          <span class="requirement"> $WARP TOKEN</span>
+        </span>
+        <span class="cursor">█</span>
+      </div>
+    </div>
+
+    <button @click="$emit('connect-wallet')" class="connect-button">
+      {{ isConnected ? 'Connected to SEI' : 'connect wallet' }}
+    </button>
+    <p v-if="walletAddress" class="wallet-address">
+      SEI Address: {{ truncateAddress(walletAddress) }}
+    </p>
+    <p v-if="evmAddress" class="wallet-address">
+      EVM Address: {{ truncateAddress(evmAddress) }}
+    </p>
+    <p v-if="nftStatus" class="nft-status">
+      {{ nftStatus }}
+      <span v-if="warpBoisCount > 0" class="nft-count">Warp Bois: {{ warpBoisCount }}</span>
+      <span v-if="tacCount > 0" class="nft-count">TACs: {{ tacCount }}</span>
+    </p>
+    <HomeCharts />
+
     <h1>welcome to ████████</h1>
     
     <div class="feature-grid">
@@ -27,8 +70,28 @@
 </template>
 
 <script>
+import HomeCharts from '@/components/HomeCharts.vue'
+
 export default {
-  name: 'HomeView'
+  name: 'HomeView',
+  components: {
+    HomeCharts
+  },
+  props: {
+    isConnected: Boolean,
+    walletAddress: String,
+    evmAddress: String,
+    warpBoisCount: Number,
+    tacCount: Number,
+    nftStatus: String
+  },
+  emits: ['connect-wallet', 'check-nfts'],
+  methods: {
+    truncateAddress(address) {
+      if (!address) return ''
+      return `${address.slice(0, 4)}...${address.slice(-4)}`
+    }
+  }
 }
 </script>
 

@@ -1,45 +1,14 @@
 <template>
-  <div class="terminal-header">
-    <div class="terminal-bar">
-      <span class="terminal-buttons">
-        <span class="terminal-circle red"></span>
-        <span class="terminal-circle yellow"></span>
-        <span class="terminal-circle green"></span>
-      </span>
-      <span class="terminal-title">[CLASSIFIED]_v1.0</span>
-    </div>
-    <div class="terminal-content">
-      <span class="prompt">$</span>
-      <span class="command">./access_[REDACTED]</span>
-      <span class="response">
-        <span class="redacted">████████</span> protocol initialized...
-        <br>
-        clearance level: <span class="highlight">ALPHA</span>
-        <br>
-        <span class="warning">ACCESS REQUIREMENTS:</span>
-        <br>
-        <span class="requirement"> WARP BOI NFT</span>
-        <span class="requirement"> TREK ACCESS CHIT</span>
-        <span class="requirement"> $WARP TOKEN</span>
-      </span>
-      <span class="cursor">█</span>
-    </div>
-  </div>
-  <button @click="connectWallet" class="connect-button">
-    {{ isConnected ? 'Connected to SEI' : 'connect wallet' }}
-  </button>
-  <p v-if="walletAddress" class="wallet-address">
-    SEI Address: {{ walletAddress }}
-  </p>
-  <p v-if="evmAddress" class="wallet-address">
-    EVM Address: {{ evmAddress }}
-  </p>
-  <p v-if="nftStatus" class="nft-status">
-    {{ nftStatus }}
-    <span v-if="warpBoisCount > 0" class="nft-count">Warp Bois: {{ warpBoisCount }}</span>
-    <span v-if="tacCount > 0" class="nft-count">TACs: {{ tacCount }}</span>
-  </p>
-  <router-view></router-view>
+  <router-view 
+    :isConnected="isConnected"
+    :walletAddress="walletAddress"
+    :evmAddress="evmAddress"
+    :warpBoisCount="warpBoisCount"
+    :tacCount="tacCount"
+    :nftStatus="nftStatus"
+    @connect-wallet="handleConnect"
+    @check-nfts="handleNFTCheck"
+  ></router-view>
   <NftConveyor 
     :isConnected="isConnected"
     :walletAddress="walletAddress"
@@ -76,87 +45,57 @@ export default {
       isConnected: false,
       walletAddress: null,
       evmAddress: null,
-      nftStatus: null,
-      WARP_BOIS_CONTRACT: "sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm",
-      TAC_CONTRACT: "sei14cvgwjct3rcds3xzvem6eweaehe0vd3trjjpaz6zxzgse7yx890q8w8jam",
       warpBoisCount: 0,
-      tacCount: 0
+      tacCount: 0,
+      nftStatus: null
     }
   },
   methods: {
-    async connectWallet() {
+    async handleConnect() {
       try {
+        // First check if Compass is installed
         if (!window.compass) {
-          alert('Please install Compass Wallet');
+          alert("Please install Compass wallet");
           return;
         }
 
-        const response = await window.compass.getOfflineSigner("pacific-1");
-        const accounts = await response.getAccounts();
+        // Use the correct chain ID format
+        const chainId = "pacific-1";
+        await window.compass.enable(chainId);
+        const offlineSigner = window.compass.getOfflineSigner(chainId);
+        const accounts = await offlineSigner.getAccounts();
         
         this.walletAddress = accounts[0].address;
-        
-        // Check NFT ownership
-        await this.checkNFTs();
-        
-        // Fetch EVM address from SEI trace API
-        const seiTraceResponse = await fetch(`https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.walletAddress}`);
-        const data = await seiTraceResponse.json();
-        if (data.association && data.association.evm_hash) {
-          this.evmAddress = data.association.evm_hash;
-        }
-        
         this.isConnected = true;
+        
+        // Get EVM address
+        const evmAddress = await window.compass.getKey(chainId);
+        this.evmAddress = evmAddress.ethAddress;
+        
+        this.handleNFTCheck();
       } catch (error) {
-        console.error('Failed to connect wallet:', error);
-        alert('Failed to connect wallet');
+        console.error("Error connecting wallet:", error);
+        if (error.message.includes("chain id not set")) {
+          alert("Please make sure Compass wallet is properly configured for SEI Pacific-1");
+        }
       }
     },
-
-    async checkNFTs() {
+    async handleNFTCheck() {
       try {
-        console.log('Checking NFTs for address:', this.walletAddress);
-        const palletResponse = await fetch(`https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true&include_bids=true`);
-        const data = await palletResponse.json();
+        const WARP_BOIS_CONTRACT = "sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm";
+        const TAC_CONTRACT = "sei14cvgwjct3rcds3xzvem6eweaehe0vd3trjjpaz6zxzgse7yx890q8w8jam";
         
-        if (data.error === "User not found") {
-          this.nftStatus = "Please purchase a Warp Boi or Trek Access Chit from Pallet Exchange";
-          this.warpBoisCount = 0;
-          this.tacCount = 0;
-          localStorage.setItem('warpBoisCount', '0');
-          localStorage.setItem('tacCount', '0');
-          return;
-        }
-
-        // Count the NFTs
-        this.warpBoisCount = data.nfts?.filter(nft => 
-          nft.collection.sei_address === this.WARP_BOIS_CONTRACT
-        ).length || 0;
+        const response = await fetch(`https://rest.sei-apis.com/cosmwasm/wasm/v1/contract/${WARP_BOIS_CONTRACT}/smart/${Buffer.from(JSON.stringify({tokens: {owner: this.walletAddress}})).toString('base64')}`);
+        const data = await response.json();
+        this.warpBoisCount = data.data.tokens.length;
         
-        this.tacCount = data.nfts?.filter(nft => 
-          nft.collection.sei_address === this.TAC_CONTRACT
-        ).length || 0;
-
-        // Store counts in localStorage
-        localStorage.setItem('warpBoisCount', this.warpBoisCount.toString());
-        localStorage.setItem('tacCount', this.tacCount.toString());
-
-        if (this.warpBoisCount > 0 && this.tacCount > 0) {
-          this.nftStatus = "Trek Maxi! 🚀";
-        } else if (this.warpBoisCount > 0) {
-          this.nftStatus = "Warp Boi holder! 👾";
-        } else if (this.tacCount > 0) {
-          this.nftStatus = "TAC Holder! 🎫";
-        } else {
-          this.nftStatus = "Please purchase a Warp Boi or Trek Access Chit from Pallet Exchange";
-        }
+        const tacResponse = await fetch(`https://rest.sei-apis.com/cosmwasm/wasm/v1/contract/${TAC_CONTRACT}/smart/${Buffer.from(JSON.stringify({tokens: {owner: this.walletAddress}})).toString('base64')}`);
+        const tacData = await tacResponse.json();
+        this.tacCount = tacData.data.tokens.length;
+        
+        this.nftStatus = this.warpBoisCount > 0 || this.tacCount > 0 ? "Warp Boi holder! 👾" : null;
       } catch (error) {
-        console.error('Failed to check NFTs:', error);
-        this.nftStatus = "Error checking NFT status";
-        this.warpBoisCount = 0;
-        this.tacCount = 0;
-        localStorage.setItem('warpBoisCount', '0');
-        localStorage.setItem('tacCount', '0');
+        console.error("Error checking NFTs:", error);
       }
     }
   }
@@ -164,145 +103,32 @@ export default {
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap');
-
 #app {
-  font-family: 'Source Code Pro', 'Courier New', Courier, monospace;
+  font-family: 'Source Code Pro', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #ffffff;
-  margin-top: 60px;
+  color: #42b983;
   background-color: #1a1a1a;
   min-height: 100vh;
-  padding: 20px;
-  padding-bottom: 80px;
 }
 
 body {
   margin: 0;
+  padding: 0;
   background-color: #1a1a1a;
-}
-
-.connect-button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  background-color: #42b983;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  font-family: 'Source Code Pro', 'Courier New', Courier, monospace;
-}
-
-.connect-button:hover {
-  background-color: #3aa876;
-  box-shadow: 0 0 15px rgba(66, 185, 131, 0.3);
-}
-
-.wallet-address {
-  margin-top: 20px;
-  word-break: break-all;
-  padding: 15px 20px;
-  font-family: 'Source Code Pro', 'Courier New', Courier, monospace;
-  background-color: #2c2c2c;
-  border-radius: 8px;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-  color: #42b983;
-}
-
-img {
-  filter: brightness(0.9);
-}
-
-.nft-status {
-  margin-top: 20px;
-  padding: 15px 20px;
-  background-color: #2c2c2c;
-  border-radius: 8px;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-  color: #42b983;
-  font-weight: bold;
-}
-
-.nft-count {
-  display: block;
-  font-size: 0.9em;
-  margin-top: 8px;
-  color: #42b983;
-}
-
-.edit-profile,
-.nft-analysis,
-.coin-analysis,
-.trend-analysis,
-.portfolio-analysis {
-  padding: 20px;
-  margin: 20px auto;
-  max-width: 800px;
-  background-color: #2c2c2c;
-  border-radius: 8px;
-}
-
-h1 {
-  color: #42b983;
-  margin-bottom: 20px;
-}
-
-p {
-  color: #ffffff;
-  line-height: 1.6;
-}
-
-.bottom-toolbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #2c2c2c;
-  padding: 15px;
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-}
-
-.nav-link {
-  color: #ffffff;
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-  font-family: 'Source Code Pro', 'Courier New', Courier, monospace;
-}
-
-.nav-link:hover {
-  background-color: #42b983;
-  color: #1a1a1a;
-}
-
-.nav-link.router-link-active {
-  background-color: #42b983;
-  color: #1a1a1a;
 }
 
 .terminal-header {
-  width: 400px;
+  background-color: #2c2c2c;
+  border-radius: 8px;
   margin: 20px auto;
-  background-color: #1a1a1a;
-  border-radius: 6px;
-  box-shadow: 0 0 20px rgba(66, 185, 131, 0.2);
+  max-width: 800px;
   overflow: hidden;
 }
 
 .terminal-bar {
-  background-color: #2c2c2c;
+  background-color: #3c3c3c;
   padding: 8px;
   display: flex;
   align-items: center;
@@ -324,17 +150,15 @@ p {
 .green { background-color: #27c93f; }
 
 .terminal-title {
-  color: #666;
-  font-size: 12px;
-  margin-left: 20px;
+  flex-grow: 1;
+  text-align: center;
+  color: #999;
 }
 
 .terminal-content {
-  padding: 15px;
-  font-family: 'Source Code Pro', monospace;
-  color: #42b983;
-  font-size: 14px;
-  text-shadow: 0 0 5px rgba(66, 185, 131, 0.3);
+  padding: 20px;
+  text-align: left;
+  line-height: 1.6;
 }
 
 .prompt {
@@ -344,14 +168,27 @@ p {
 
 .command {
   color: #fff;
-  margin-right: 8px;
 }
 
 .response {
+  color: #666;
   display: block;
-  margin-top: 8px;
+  margin-top: 10px;
+}
+
+.highlight {
   color: #42b983;
-  line-height: 1.5;
+  font-weight: bold;
+}
+
+.warning {
+  color: #ffbd2e;
+}
+
+.requirement {
+  color: #42b983;
+  display: block;
+  margin-left: 20px;
 }
 
 .cursor {
@@ -359,43 +196,66 @@ p {
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
 
-.redacted {
+.connect-button {
   background-color: #42b983;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Source Code Pro', monospace;
+  margin: 20px 0;
+}
+
+.wallet-address {
+  color: #666;
+  font-family: 'Source Code Pro', monospace;
+}
+
+.nft-status {
   color: #42b983;
+  margin: 20px 0;
+}
+
+.nft-count {
+  background-color: #2c2c2c;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 0 5px;
+}
+
+.bottom-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #2c2c2c;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  z-index: 1000;
+}
+
+.nav-link {
+  color: #42b983;
+  text-decoration: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.nav-link:hover {
+  background-color: #3c3c3c;
+}
+
+.redacted {
+  background-color: #666;
+  color: #666;
   padding: 0 4px;
-  font-family: monospace;
-  text-shadow: none;
-  position: relative;
-}
-
-.highlight {
-  color: #42b983;
-  font-weight: bold;
-  text-shadow: 0 0 8px rgba(66, 185, 131, 0.5);
-}
-
-.warning {
-  color: #ffbd2e;
-  font-weight: bold;
-  margin-top: 8px;
-  display: block;
-}
-
-.requirement {
-  color: #42b983;
-  display: block;
-  padding-left: 12px;
-  font-size: 0.9em;
-  opacity: 0.9;
-}
-
-.requirement::before {
-  content: '>';
-  margin-right: 6px;
-  color: #42b983;
+  user-select: none;
 }
 </style>
