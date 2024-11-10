@@ -34,13 +34,8 @@
 
 <script>
 import NftConveyor from './components/NftConveyor.vue'
-import { createClient } from '@supabase/supabase-js'
+import supabase from './supabase'  // Import shared instance
 import { v4 as uuidv4 } from 'uuid'
-
-const supabase = createClient(
-  process.env.VUE_APP_SUPABASE_URL,
-  process.env.VUE_APP_SUPABASE_ANON_KEY
-)
 
 export default {
   name: 'App',
