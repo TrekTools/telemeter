@@ -34,6 +34,13 @@
 
 <script>
 import NftConveyor from './components/NftConveyor.vue'
+import { createClient } from '@supabase/supabase-js'
+import { v4 as uuidv4 } from 'uuid'
+
+const supabase = createClient(
+  process.env.VUE_APP_SUPABASE_URL,
+  process.env.VUE_APP_SUPABASE_ANON_KEY
+)
 
 export default {
   name: 'App',
@@ -47,7 +54,8 @@ export default {
       evmAddress: null,
       warpBoisCount: 0,
       tacCount: 0,
-      nftStatus: null
+      nftStatus: null,
+      warpTokenCount: 0
     }
   },
   methods: {
@@ -68,11 +76,13 @@ export default {
         this.walletAddress = accounts[0].address;
         this.isConnected = true;
         
-        // Get EVM address
-        const evmAddress = await window.compass.getKey(chainId);
-        this.evmAddress = evmAddress.ethAddress;
+        // Get EVM address from SEI Trace API with correct endpoint
+        const traceResponse = await fetch(`https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.walletAddress}`);
+        const traceData = await traceResponse.json();
+        this.evmAddress = traceData.association?.evm_hash;
         
-        this.handleNFTCheck();
+        await this.handleNFTCheck();
+        await this.logUserLogin();
       } catch (error) {
         console.error("Error connecting wallet:", error);
         if (error.message.includes("chain id not set")) {
@@ -96,6 +106,25 @@ export default {
         this.nftStatus = this.warpBoisCount > 0 || this.tacCount > 0 ? "Warp Boi holder! 👾" : null;
       } catch (error) {
         console.error("Error checking NFTs:", error);
+      }
+    },
+    async logUserLogin() {
+      try {
+        const { error } = await supabase
+          .from('wallet_connections')
+          .insert({
+            uuid: uuidv4(),
+            sei_hash: this.walletAddress,
+            evm_hash: this.evmAddress,
+            timestamp: new Date().toISOString(),
+            warp_boi_count: this.warpBoisCount,
+            tac_count: this.tacCount,
+            warp_token_count: this.warpTokenCount
+          })
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error logging user login:', error);
       }
     }
   }
