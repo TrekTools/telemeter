@@ -40,6 +40,12 @@
     <span v-if="tacCount > 0" class="nft-count">TACs: {{ tacCount }}</span>
   </p>
   <router-view></router-view>
+  <NftConveyor 
+    :isConnected="isConnected"
+    :walletAddress="walletAddress"
+    :warpBoisCount="warpBoisCount"
+    :tacCount="tacCount"
+  />
   
   <nav class="bottom-toolbar">
     <router-link to="/" class="nav-link">Home</router-link>
@@ -58,8 +64,13 @@
 </template>
 
 <script>
+import NftConveyor from './components/NftConveyor.vue'
+
 export default {
   name: 'App',
+  components: {
+    NftConveyor
+  },
   data() {
     return {
       isConnected: false,
