@@ -27,14 +27,31 @@
         <table>
           <thead>
             <tr>
+              <th>Label</th>
               <th>SEI Address</th>
               <th>EVM Address</th>
               <th>Added</th>
-              <th>Action</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="wallet in linkedWallets" :key="wallet.uuid">
+              <td class="label-cell">
+                <input 
+                  type="text" 
+                  v-model="wallet.label"
+                  class="label-input"
+                  :placeholder="wallet.sei_hash === walletAddress ? 'Primary Wallet' : 'Add label'"
+                >
+                <button 
+                  @click="(event) => updateWalletLabel(wallet, event)"
+                  class="save-btn"
+                  :disabled="!isValidLabel(wallet.label)"
+                  :title="!isValidLabel(wallet.label) ? 'Label cannot contain semi-colons' : ''"
+                >
+                  Save
+                </button>
+              </td>
               <td>{{ truncateAddress(wallet.sei_hash) }}</td>
               <td>{{ truncateAddress(wallet.evm_hash) }}</td>
               <td>{{ new Date(wallet.timestamp).toLocaleString() }}</td>
@@ -72,7 +89,8 @@ export default {
       walletInput: '',
       selectedChain: 'sei',
       inputError: null,
-      linkedWallets: []
+      linkedWallets: [],
+      toast: null
     }
   },
   async created() {
@@ -208,6 +226,7 @@ export default {
           control_evm_hash: this.evmAddress,
           sei_hash: seiHash,
           evm_hash: evmHash,
+          label: '',  // Initialize empty label
           timestamp: new Date().toISOString()
         })
 
@@ -244,6 +263,44 @@ export default {
       } catch (error) {
         console.error('Error deleting linked wallet:', error)
       }
+    },
+    isValidLabel(label) {
+      return label && !label.includes(';')
+    },
+    async updateWalletLabel(wallet, event) {
+      if (!this.isValidLabel(wallet.label)) {
+        this.inputError = 'Label cannot contain semi-colons'
+        return
+      }
+
+      try {
+        const { error } = await supabase
+          .from('linked_wallets')
+          .update({ label: wallet.label.trim() })
+          .match({ uuid: wallet.uuid })
+          .eq('control_sei_hash', this.walletAddress)
+
+        if (error) throw error
+
+        // Show success feedback on button
+        const btn = event.target
+        btn.textContent = '✓'
+        setTimeout(() => {
+          btn.textContent = 'Save'
+        }, 1000)
+
+        // Show toast message
+        this.showToast('Label updated')
+      } catch (error) {
+        console.error('Error updating wallet label:', error)
+        this.inputError = 'Error saving label'
+      }
+    },
+    showToast(message) {
+      this.toast = message
+      setTimeout(() => {
+        this.toast = null
+      }, 3000)
     }
   }
 }
@@ -354,5 +411,93 @@ th, td {
 th {
   color: #42b983;
   font-weight: normal;
+}
+
+.label-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #42b983;
+  color: #ffffff;
+  padding: 4px 8px;
+  font-family: 'Source Code Pro', monospace;
+  width: 150px;
+}
+
+.label-input:disabled {
+  border-bottom: 1px solid #666;
+  color: #666;
+}
+
+.label-input:focus {
+  outline: none;
+  border-bottom: 2px solid #42b983;
+}
+
+.label-input::placeholder {
+  color: #666;
+}
+
+.label-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.save-btn {
+  background: #42b983;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: all 0.3s ease;
+}
+
+.save-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #3aa876;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #ff4444;
+  cursor: pointer;
+  font-size: 1.2em;
+  padding: 0 8px;
+  transition: color 0.3s;
+}
+
+.delete-btn:hover {
+  color: #ff6666;
+}
+
+td {
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #42b983;
+  color: #1a1a1a;
+  padding: 12px 24px;
+  border-radius: 4px;
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.3s ease;
+}
+
+.toast-show {
+  opacity: 1;
+  transform: translateY(0);
 }
 </style> 
