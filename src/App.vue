@@ -1,6 +1,6 @@
 <template>
   <router-view 
-    :isConnected="isConnected"
+    :wallet-connected="isConnected"
     :walletAddress="walletAddress"
     :evmAddress="evmAddress"
     :warpBoisCount="warpBoisCount"
@@ -10,7 +10,7 @@
     @check-nfts="handleNFTCheck"
   ></router-view>
   <NftConveyor 
-    :isConnected="isConnected"
+    :wallet-connected="isConnected"
     :walletAddress="walletAddress"
     :warpBoisCount="warpBoisCount"
     :tacCount="tacCount"
@@ -110,7 +110,25 @@ export default {
     },
     async logUserLogin() {
       try {
-        const { error } = await supabase
+        // First try to insert into unique_wallets if this pair doesn't exist
+        const { error: uniqueError } = await supabase
+          .from('unique_wallets')
+          .insert({
+            uuid: uuidv4(),
+            sei_hash: this.walletAddress,
+            evm_hash: this.evmAddress,
+            timestamp: new Date().toISOString()
+          })
+          .select()
+          .maybeSingle()
+
+        // If there's a unique constraint error, that's fine - the pair already exists
+        if (uniqueError && !uniqueError.message.includes('unique constraint')) {
+          console.error('Error inserting unique wallet:', uniqueError)
+        }
+
+        // Always log the login attempt
+        const { error: loginError } = await supabase
           .from('wallet_connections')
           .insert({
             uuid: uuidv4(),
@@ -122,9 +140,9 @@ export default {
             warp_token_count: this.warpTokenCount
           })
 
-        if (error) throw error;
+        if (loginError) throw loginError
       } catch (error) {
-        console.error('Error logging user login:', error);
+        console.error('Error logging user login:', error)
       }
     }
   }
