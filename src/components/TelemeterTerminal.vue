@@ -13,93 +13,59 @@
           <span class="terminal-circle yellow" @click.stop="minimize"></span>
           <span class="terminal-circle green" @click.stop="toggleToast"></span>
         </span>
-        <span class="terminal-title">{{ warpBoi ? getWarpBoiName : 'Telemeter Terminal' }}</span>
+        <span class="terminal-title">Telemeter Terminal</span>
       </div>
     </div>
     <div class="toast-content" v-if="isOpen">
-      <div class="terminal-interface">
-        <!-- Warp Boi Info Section -->
-        <div v-if="warpBoi" class="warpboi-info">
-          <img :src="warpBoi.image" alt="Warp Boi" class="warpboi-avatar">
-          <div class="warpboi-details">
-            <h3>{{ getWarpBoiName }}</h3>
-            <p>Rank: {{ getWarpBoiRank }}</p>
-          </div>
-        </div>
-        
-        <!-- Command Input -->
-        <div class="command-line">
+      <div class="command-line">
+        <span class="prompt">$</span>
+        <input 
+          type="text" 
+          v-model="command" 
+          @keyup.enter="executeCommand"
+          placeholder="Enter command (try 'help')"
+          ref="commandInput"
+        >
+      </div>
+      <div class="command-history">
+        <div v-for="(log, index) in commandLogs" :key="index" class="log-entry">
           <span class="prompt">$</span>
-          <input 
-            type="text" 
-            v-model="command" 
-            @keyup.enter="executeCommand"
-            placeholder="Enter command (try 'help')"
-            ref="commandInput"
-          >
-        </div>
-        
-        <!-- Command History -->
-        <div class="command-history">
-          <!-- Warp Boi Welcome Message -->
-          <div v-if="warpBoi" class="log-entry warpboi-message">
-            <span class="response-text">
-              Greetings, commander! I'm {{ getWarpBoiName }}, your personal assistant. 
-              I'm equipped with a {{ getWarpBoiRightHand }} and a {{ getWarpBoiLeftHand }}. 
-              How may I assist you today?
-            </span>
-          </div>
-          
-          <!-- Command Logs -->
-          <div v-for="(log, index) in commandLogs" :key="index" class="log-entry">
-            <span class="prompt">$</span>
-            <span class="command-text">{{ log.command }}</span>
-            <span class="response-text">{{ log.response }}</span>
-          </div>
+          <span class="command-text">{{ log.command }}</span>
+          <span class="response-text">{{ log.response }}</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Dock Icon -->
+  <!-- Dock icon when minimized -->
   <div 
     v-show="isMinimized || hidden"
     class="dock-icon"
     @click="restore"
   >
-    <template v-if="warpBoi">
-      <img :src="warpBoi.image" class="dock-avatar" alt="Warp Boi">
-      {{ getWarpBoiName }}
-    </template>
-    <template v-else>
-      <span class="terminal-circle green"></span>
-      Terminal
-    </template>
+    <span class="terminal-circle green"></span>
+    Terminal
   </div>
 </template>
 
 <script>
 export default {
-  name: 'CommandToast',
+  name: 'TelemeterTerminal',
   props: {
     walletConnected: {
       type: Boolean,
       default: false
     },
-    warpBoi: {
-      type: Object,
-      default: null
+    warpBoisCount: {
+      type: Number,
+      default: 0
     },
-    walletAddress: {
-      type: String,
-      default: ''
-    },
-    evmAddress: {
-      type: String,
-      default: ''
+    tacCount: {
+      type: Number,
+      default: 0
     }
   },
-  emits: ['connect-wallet', 'disconnect-wallet', 'change-nft-view'],
+  emits: ['connect-wallet', 'disconnect-wallet'],
   data() {
     return {
       isOpen: true,
@@ -114,7 +80,7 @@ export default {
       isDragging: false,
       dragOffset: { x: 0, y: 0 },
       commands: {
-        help: 'Available commands: connect, disconnect, profile, nft, portfolio, coins, trends, about, guide, nft-gw, nft-gc, clear',
+        help: 'Available commands: connect, disconnect, profile, nft, portfolio, coins, trends, about, guide, clear',
         profile: '/profile',
         nft: '/nft',
         portfolio: '/portfolio',
@@ -124,10 +90,7 @@ export default {
         guide: '/guide',
         clear: 'clear',
         connect: 'connect',
-        disconnect: 'disconnect',
-        home: '/',
-        'nft-gw': 'nft-group-wallet',
-        'nft-gc': 'nft-group-collection'
+        disconnect: 'disconnect'
       }
     }
   },
@@ -196,20 +159,18 @@ export default {
         return
       }
 
-      if (cmd === 'nft-gw' || cmd === 'nft-gc') {
-        const mode = cmd === 'nft-gw' ? 'wallet' : 'collection'
-        
-        if (this.$route.path !== '/nft') {
-          this.$router.push('/nft').then(() => {
-            this.$nextTick(() => {
-              this.$emit('change-nft-view', mode)
-            })
-          })
-        } else {
-          this.$emit('change-nft-view', mode)
+      // Protected commands that require wallet connection and NFT ownership
+      const protectedCommands = ['nft', 'portfolio', 'coins', 'trends', 'profile']
+      
+      if (protectedCommands.includes(cmd)) {
+        if (!this.walletConnected) {
+          response = 'Please connect your wallet first.'
+        } else if (this.warpBoisCount === 0 && this.tacCount === 0) {
+          response = 'Access denied. You need to own a Warp Boi or TAC NFT to access this feature.'
+        } else if (this.commands[cmd]) {
+          this.$router.push(this.commands[cmd])
+          response = `Navigating to ${cmd}...`
         }
-        
-        response = `Switched to Group by ${mode === 'wallet' ? 'Wallet' : 'Collection'} view`
       } else if (cmd === 'connect') {
         if (this.walletConnected) {
           response = 'Wallet is already connected!'
@@ -225,6 +186,7 @@ export default {
           response = 'Disconnecting wallet...'
         }
       } else if (this.commands[cmd]) {
+        // Non-protected commands (help, about, guide)
         if (typeof this.commands[cmd] === 'string' && this.commands[cmd].startsWith('/')) {
           this.$router.push(this.commands[cmd])
           response = `Navigating to ${cmd}...`
@@ -239,20 +201,6 @@ export default {
       })
       
       this.command = ''
-    }
-  },
-  computed: {
-    getWarpBoiName() {
-      return this.warpBoi?.traits.find(t => t.type === 'name')?.value || this.warpBoi?.name
-    },
-    getWarpBoiRank() {
-      return this.warpBoi?.traits.find(t => t.type === 'rank')?.value
-    },
-    getWarpBoiRightHand() {
-      return this.warpBoi?.traits.find(t => t.type === 'right_hand')?.value
-    },
-    getWarpBoiLeftHand() {
-      return this.warpBoi?.traits.find(t => t.type === 'left_hand')?.value
     }
   }
 }
@@ -307,40 +255,5 @@ export default {
   padding: 8px 12px;
   display: flex;
   align-items: center;
-}
-
-.warpboi-info {
-  display: flex;
-  padding: 15px;
-  background-color: #2c2c2c;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #3a3a3a;
-}
-
-.warpboi-avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.warpboi-details h3 {
-  margin: 0;
-  color: #42b983;
-}
-
-.warpboi-details p {
-  margin: 5px 0 0;
-  color: #888;
-}
-
-.warpboi-message {
-  background-color: #2c2c2c;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  color: #42b983;
 }
 </style> 

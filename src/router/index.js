@@ -69,10 +69,12 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresNFT) {
     try {
-      console.log('Current app instance:', appInstance)
-      console.log('Current NFT counts:', {
-        warpBois: appInstance?.warpBoisCount,
-        tac: appInstance?.tacCount
+      console.log('Route Guard Debug:', {
+        appInstance: appInstance,
+        warpBoisCount: appInstance?.warpBoisCount,
+        tacCount: appInstance?.tacCount,
+        routerViewProps: appInstance?.$refs?.routerView,
+        path: to.path
       })
 
       if (!appInstance) {
@@ -81,10 +83,10 @@ router.beforeEach((to, from, next) => {
         return
       }
 
+      // Check NFT counts directly from app instance
       const hasRequiredNFT = appInstance.warpBoisCount > 0 || appInstance.tacCount > 0
       
-      console.log('Route Guard Check:', {
-        route: to.path,
+      console.log('Access Check:', {
         warpBoisCount: appInstance.warpBoisCount,
         tacCount: appInstance.tacCount,
         hasAccess: hasRequiredNFT

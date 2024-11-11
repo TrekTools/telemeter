@@ -61,6 +61,13 @@
                   class="delete-btn"
                   v-if="wallet.sei_hash !== walletAddress"
                 >×</button>
+                <span 
+                  v-else 
+                  class="control-note"
+                  title="Control wallets cannot be deleted"
+                >
+                  (control)
+                </span>
               </td>
             </tr>
           </tbody>
@@ -541,5 +548,11 @@ td {
 .toast-show {
   opacity: 1;
   transform: translateY(0);
+}
+
+.control-note {
+  color: #666;
+  font-size: 0.8em;
+  font-style: italic;
 }
 </style> 
