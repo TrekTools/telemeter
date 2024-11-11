@@ -21,7 +21,10 @@
             {{ wallet.label || truncateAddress(wallet.sei_hash) }}
           </span>
           <span class="evm-address">(EVM: {{ truncateAddress(wallet.evm_hash) }})</span>
-          <span class="nft-count">NFTs: {{ wallet.nfts?.length || 0 }}</span>
+          <div class="wallet-stats">
+            <span class="nft-count">NFTs: {{ wallet.nfts?.length || 0 }}</span>
+            <span class="estimated-value">Est. Value: {{ calculateWalletValue(wallet.nfts) }} $SEI</span>
+          </div>
         </div>
       </div>
       
@@ -31,6 +34,15 @@
             <img :src="nft.image" :alt="nft.name" class="nft-image">
             <div class="nft-info">
               <span class="nft-name">{{ nft.name }}</span>
+              <div class="debug-info" style="color: red; font-size: 0.8em;">
+                Slug: {{ nft.collection_slug }}
+              </div>
+              <div v-if="nft.collection_stats" class="floor-price">
+                Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
+              </div>
+              <div v-else class="floor-price">
+                No stats available
+              </div>
             </div>
           </div>
         </div>
@@ -48,6 +60,8 @@
 
 <script>
 import supabase from '../supabase'
+
+const HASURA_ENDPOINT = process.env.VUE_APP_GRAPHQL_ENDPOINT // Add this to your .env
 
 export default {
   name: 'NftAnalysis',
@@ -128,11 +142,38 @@ export default {
         )
         const data = await response.json()
         
-        if (data.nfts) {
-          // Find and update the wallet in linkedWallets array
+        if (data.nfts && data.nfts.length > 0) {
+          // Get unique EVM addresses
+          const uniqueAddresses = [...new Set(data.nfts.map(nft => nft.collection?.evm_address))]
+          console.log('Unique EVM addresses:', uniqueAddresses)
+          
+          // Fetch all collection stats in one query
+          const collectionStats = await this.fetchCollectionStats(uniqueAddresses)
+          console.log('Collection stats received:', collectionStats)
+
+          // Create a map using EVM address as key
+          const statsMap = {}
+          collectionStats.forEach(stats => {
+            if (stats && stats.evm_address) {
+              statsMap[stats.evm_address] = stats
+              console.log(`Mapping stats for address ${stats.evm_address}:`, stats)
+            }
+          })
+
+          // Enrich NFT data with collection stats
+          const enrichedNFTs = data.nfts.map(nft => {
+            const stats = statsMap[nft.collection?.evm_address]
+            console.log(`Enriching NFT ${nft.name} with stats:`, stats)
+            return {
+              ...nft,
+              collection_stats: stats || null
+            }
+          })
+
+          // Update the wallet's NFTs
           const walletIndex = this.linkedWallets.findIndex(w => w.sei_hash === wallet.sei_hash)
           if (walletIndex !== -1) {
-            this.linkedWallets[walletIndex].nfts = data.nfts
+            this.linkedWallets[walletIndex].nfts = enrichedNFTs
           }
         }
       } catch (error) {
@@ -149,6 +190,63 @@ export default {
       return nfts.filter(nft => 
         nft.name.toLowerCase().includes(query)
       )
+    },
+    async fetchCollectionStats(evmAddresses) {
+      try {
+        console.log('Fetching stats for EVM addresses:', evmAddresses)
+        
+        const response = await fetch(HASURA_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-hasura-admin-secret': process.env.VUE_APP_HASURA_ADMIN_SECRET
+          },
+          body: JSON.stringify({
+            query: `
+              query collection_stats {
+                pallet_time_comparison {
+                  evm_address
+                  name
+                  current_floor_1h
+                  volume_diff_1h
+                  volume_percent_diff_1h
+                  previous_volume_1h
+                  previous_owners_1h
+                  previous_floor_1h
+                  previous_auction_count_1h
+                  owners_percent_diff_1h
+                  owners_diff_1h
+                  floor_percent_diff_1h
+                  floor_diff_1h
+                  current_volume_1h
+                  current_owners_1h
+                  current_auction_count_1h
+                  auction_count_percent_diff_1h
+                  auction_count_diff_1h
+                }
+              }
+            `
+          })
+        })
+        
+        const responseData = await response.json()
+        console.log('GraphQL response:', responseData)
+        return responseData.data?.pallet_time_comparison || []
+      } catch (error) {
+        console.error('Error in fetchCollectionStats:', error)
+        return []
+      }
+    },
+    calculateWalletValue(nfts) {
+      if (!nfts) return '0'
+      
+      const total = nfts.reduce((sum, nft) => {
+        // Make sure we're accessing the correct property path
+        const floor = parseFloat(nft.collection_stats?.current_floor_1h) || 0
+        return sum + floor
+      }, 0)
+      
+      return total.toFixed(2)
     }
   },
   async created() {
@@ -257,6 +355,9 @@ export default {
 
 .nft-info {
   padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .nft-name {
@@ -313,5 +414,69 @@ export default {
 
 .search-input::placeholder {
   color: #666;
+}
+
+.collection-stats {
+  margin-top: 8px;
+  font-size: 0.9em;
+  border-top: 1px solid #333;
+  padding-top: 8px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.label {
+  color: #666;
+  min-width: 50px;
+}
+
+.value {
+  color: #fff;
+}
+
+.diff {
+  font-size: 0.8em;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.diff.positive {
+  color: #42b983;
+  background: rgba(66, 185, 131, 0.1);
+}
+
+.diff.negative {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.wallet-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.estimated-value {
+  color: #42b983;
+  font-size: 0.9em;
+  padding: 4px 8px;
+  background: rgba(66, 185, 131, 0.1);
+  border-radius: 4px;
+}
+
+.floor-price {
+  color: #42b983;
+  font-size: 0.9em;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(66, 185, 131, 0.1);
+  border-radius: 4px;
+  display: inline-block;
 }
 </style>
