@@ -146,27 +146,76 @@ export default {
     async fetchWarpBoiData() {
       console.log('CommandToast: Starting Warp Boi fetch...')
       try {
-        const response = await fetch(`https://api.pallet.exchange/api/v2/nfts/sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm/tokens/1887`)
-        console.log('CommandToast: Fetch response received:', response.status)
-        const data = await response.json()
-        console.log('CommandToast: Raw data:', data)
-        
-        if (data.tokens && data.tokens[0]) {
-          this.activeWarpBoi = data.tokens[0]
-          console.log('CommandToast: Active Warp Boi set:', this.activeWarpBoi)
-          
-          const traits = this.activeWarpBoi.traits.reduce((acc, trait) => {
-            acc[trait.type] = trait.value
-            return acc
-          }, {})
-          
-          console.log('CommandToast: Processed traits:', traits)
-        } else {
-          console.error('CommandToast: No tokens found in response')
+        const userAddress = this.walletAddress || this.evmAddress
+        if (!userAddress) {
+          throw new Error('No wallet address available')
         }
+
+        console.log('CommandToast: Fetching for address:', userAddress)
+
+        // Use the full API URL
+        const response = await fetch(
+          `https://api.pallet.exchange/api/v1/user/${userAddress}?network=mainnet&include_tokens=true&include_bids=true`
+        )
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log('CommandToast: User data received:', data)
+        
+        // Filter for WARP NFTs
+        const warpNFTs = data.nfts.filter(nft => nft.collection.symbol === "WARP")
+        console.log('CommandToast: Found WARP NFTs:', warpNFTs)
+
+        if (!warpNFTs.length) {
+          throw new Error('No WARP NFTs found')
+        }
+
+        // Sort by ID and get the first one
+        const lowestWarpNFT = warpNFTs.sort((a, b) => Number(a.id) - Number(b.id))[0]
+        console.log('CommandToast: Lowest ID WARP NFT:', lowestWarpNFT)
+
+        // Now fetch the specific NFT details with full API URL
+        const nftResponse = await fetch(
+          `https://api.pallet.exchange/api/v2/nfts/sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm/tokens/${lowestWarpNFT.id}`
+        )
+
+        if (!nftResponse.ok) {
+          throw new Error(`HTTP error! status: ${nftResponse.status}`)
+        }
+
+        const nftData = await nftResponse.json()
+        console.log('CommandToast: NFT details received:', nftData)
+
+        if (nftData.tokens && nftData.tokens[0]) {
+          this.activeWarpBoi = nftData.tokens[0]
+          console.log('CommandToast: Active Warp Boi set:', this.activeWarpBoi)
+        }
+
       } catch (error) {
-        console.error('CommandToast: Error fetching Warp Boi:', error)
+        console.error('CommandToast: Error fetching Warp Boi data:', error)
+        this.commandLogs.push({
+          command: 'system',
+          response: `Error fetching Warp Boi data: ${error.message}`
+        })
       }
+    },
+
+    // Helper function to convert rank to numeric value
+    getRankValue(rank) {
+      const rankOrder = {
+        'private': 1,
+        'corporal': 2,
+        'sergeant': 3,
+        'lieutenant': 4,
+        'captain': 5,
+        'major': 6,
+        'colonel': 7,
+        'general': 8
+      }
+      return rankOrder[rank.toLowerCase()] || Infinity
     },
     generateGreeting() {
       if (!this.activeWarpBoi) return ''
