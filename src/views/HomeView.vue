@@ -27,8 +27,11 @@
         </div>
       </div>
   
-      <button @click="$emit('connect-wallet')" class="connect-button">
-        {{ isConnected ? 'Connected to SEI' : 'connect wallet' }}
+      <button 
+        @click="handleWalletAction" 
+        class="connect-button"
+      >
+        {{ walletConnected ? 'disconnect' : 'connect wallet' }}
       </button>
       <p v-if="walletAddress" class="wallet-address">
         SEI Address: {{ truncateAddress(walletAddress) }}
@@ -78,15 +81,25 @@
       HomeCharts
     },
     props: {
-      isConnected: Boolean,
+      walletConnected: {
+        type: Boolean,
+        default: false
+      },
       walletAddress: String,
       evmAddress: String,
       warpBoisCount: Number,
       tacCount: Number,
       nftStatus: String
     },
-    emits: ['connect-wallet', 'check-nfts'],
+    emits: ['connect-wallet', 'disconnect-wallet'],
     methods: {
+      handleWalletAction() {
+        if (this.walletConnected) {
+          this.$emit('disconnect-wallet')
+        } else {
+          this.$emit('connect-wallet')
+        }
+      },
       truncateAddress(address) {
         if (!address) return ''
         return `${address.slice(0, 4)}...${address.slice(-4)}`
@@ -119,5 +132,21 @@
   .feature-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .connect-button {
+    background-color: v-bind(walletConnected ? '#ff4444' : '#42b983');
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Source Code Pro', monospace;
+    margin: 20px 0;
+    transition: all 0.3s ease;
+  }
+  
+  .connect-button:hover {
+    background-color: v-bind(walletConnected ? '#ff6666' : '#3aa876');
   }
   </style> 

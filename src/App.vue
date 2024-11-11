@@ -1,12 +1,13 @@
 <template>
   <router-view 
-    :wallet-connected="isConnected"
+    :walletConnected="isConnected"
     :walletAddress="walletAddress"
     :evmAddress="evmAddress"
     :warpBoisCount="warpBoisCount"
     :tacCount="tacCount"
     :nftStatus="nftStatus"
     @connect-wallet="handleConnect"
+    @disconnect-wallet="disconnectWallet"
     @check-nfts="handleNFTCheck"
   ></router-view>
   <NftConveyor 
@@ -16,20 +17,47 @@
     :tacCount="tacCount"
   />
   
-  <nav class="bottom-toolbar">
-    <router-link to="/" class="nav-link">Home</router-link>
-    <router-link to="/guide" class="nav-link">Guide</router-link>
-    <router-link to="/about" class="nav-link">About</router-link>
-    
-    <!-- Protected routes only shown when NFTs are owned -->
-    <template v-if="warpBoisCount > 0 || tacCount > 0">
-      <router-link to="/nft" class="nav-link">NFT Analysis</router-link>
-      <router-link to="/coins" class="nav-link">Coins</router-link>
-      <router-link to="/portfolio" class="nav-link">Portfolio</router-link>
-      <router-link to="/trends" class="nav-link">Trends</router-link>
-      <router-link to="/profile" class="nav-link">Profile</router-link>
-    </template>
-  </nav>
+  <div class="nav-container">
+    <!-- Desktop Navigation -->
+    <nav class="bottom-toolbar" v-show="!isMobile">
+      <router-link to="/" class="nav-link">Home</router-link>
+      <router-link to="/about" class="nav-link">About</router-link>
+      <router-link to="/guide" class="nav-link">Guide</router-link>
+      
+      <!-- Protected routes only shown when NFTs are owned -->
+      <template v-if="warpBoisCount > 0 || tacCount > 0">
+        <router-link to="/portfolio" class="nav-link">Portfolio</router-link>
+        <router-link to="/coins" class="nav-link">Coins</router-link>
+        <router-link to="/nft" class="nav-link">NFT Analysis</router-link>
+        <router-link to="/trends" class="nav-link">Market Trends</router-link>
+        <router-link to="/profile" class="nav-link">Profile</router-link>
+      </template>
+    </nav>
+
+    <!-- Mobile Navigation with Drawer -->
+    <nav class="mobile-toolbar" v-show="isMobile">
+      <button class="drawer-toggle" @click="isDrawerOpen = !isDrawerOpen">
+        <span class="menu-icon">☰</span>
+      </button>
+      
+      <div class="drawer" :class="{ 'drawer-open': isDrawerOpen }">
+        <div class="drawer-content">
+          <router-link to="/" class="drawer-link" @click="closeDrawer">Home</router-link>
+          <router-link to="/about" class="drawer-link" @click="closeDrawer">About</router-link>
+          <router-link to="/guide" class="drawer-link" @click="closeDrawer">Guide</router-link>
+          
+          <!-- Protected routes in drawer -->
+          <template v-if="warpBoisCount > 0 || tacCount > 0">
+            <router-link to="/portfolio" class="drawer-link" @click="closeDrawer">Portfolio</router-link>
+            <router-link to="/coins" class="drawer-link" @click="closeDrawer">Coins</router-link>
+            <router-link to="/nft" class="drawer-link" @click="closeDrawer">NFT Analysis</router-link>
+            <router-link to="/trends" class="drawer-link" @click="closeDrawer">Market Trends</router-link>
+            <router-link to="/profile" class="drawer-link" @click="closeDrawer">Profile</router-link>
+          </template>
+        </div>
+      </div>
+    </nav>
+  </div>
 </template>
 
 <script>
@@ -50,8 +78,17 @@ export default {
       warpBoisCount: 0,
       tacCount: 0,
       nftStatus: null,
-      warpTokenCount: 0
+      warpTokenCount: 0,
+      isDrawerOpen: false,
+      isMobile: false
     }
+  },
+  created() {
+    this.checkMobile()
+    window.addEventListener('resize', this.checkMobile)
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.checkMobile)
   },
   methods: {
     async handleConnect() {
@@ -138,6 +175,41 @@ export default {
         if (loginError) throw loginError
       } catch (error) {
         console.error('Error logging user login:', error)
+      }
+    },
+    checkMobile() {
+      this.isMobile = window.innerWidth <= 768
+      if (!this.isMobile) {
+        this.isDrawerOpen = false
+      }
+    },
+    closeDrawer() {
+      this.isDrawerOpen = false
+    },
+    handleWalletAction() {
+      if (this.isConnected) {
+        this.disconnectWallet()
+      } else {
+        this.handleConnect()
+      }
+    },
+    disconnectWallet() {
+      // Reset all wallet-related state
+      this.isConnected = false
+      this.walletAddress = null
+      this.evmAddress = null
+      this.warpBoisCount = 0
+      this.tacCount = 0
+      this.nftStatus = null
+      this.warpTokenCount = 0
+      
+      // If using compass wallet, you might want to disconnect it
+      if (window.compass) {
+        try {
+          window.compass.disconnect()
+        } catch (error) {
+          console.error('Error disconnecting Compass wallet:', error)
+        }
       }
     }
   }
@@ -241,17 +313,6 @@ body {
   50% { opacity: 0; }
 }
 
-.connect-button {
-  background-color: #42b983;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: 'Source Code Pro', monospace;
-  margin: 20px 0;
-}
-
 .wallet-address {
   color: #666;
   font-family: 'Source Code Pro', monospace;
@@ -299,5 +360,128 @@ body {
   color: #666;
   padding: 0 4px;
   user-select: none;
+}
+
+.nav-container {
+  position: relative;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  background-color: #2c2c2c;
+  height: 60px;
+}
+
+.toolbar-left, .toolbar-right {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.nav-link {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  background-color: #42b983;
+  color: #1a1a1a;
+}
+
+.nav-link.router-link-active {
+  color: #42b983;
+}
+
+/* Mobile Styles */
+.mobile-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #2c2c2c;
+  padding: 10px;
+  z-index: 1000;
+}
+
+.drawer-toggle {
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: #42b983;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.drawer {
+  position: fixed;
+  bottom: -100%;
+  left: 0;
+  right: 0;
+  background-color: #2c2c2c;
+  transition: bottom 0.3s ease;
+  z-index: 999;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.drawer-open {
+  bottom: 50px;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.drawer-link {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 15px;
+  border-bottom: 1px solid #3c3c3c;
+  transition: all 0.3s ease;
+}
+
+.drawer-link:hover {
+  background-color: #42b983;
+  color: #1a1a1a;
+}
+
+.drawer-link.router-link-active {
+  color: #42b983;
+}
+
+.menu-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.drawer-open .menu-icon {
+  transform: rotate(180deg);
+}
+
+/* Add backdrop when drawer is open */
+.drawer-open::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: -1;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    display: none;
+  }
 }
 </style>
