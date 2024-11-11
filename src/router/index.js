@@ -8,6 +8,13 @@ import TelemeterGuide from '../views/TelemeterGuide.vue'
 import AboutPage from '../views/AboutPage.vue'
 import TrendAnalysis from '../views/TrendAnalysis.vue'
 
+let appInstance = null
+
+export function setAppInstance(app) {
+  console.log('Setting app instance:', app)
+  appInstance = app
+}
+
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes: [
@@ -61,12 +68,37 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresNFT) {
-    const warpBoisCount = parseInt(localStorage.getItem('warpBoisCount') || '0')
-    const tacCount = parseInt(localStorage.getItem('tacCount') || '0')
-    
-    if (warpBoisCount > 0 || tacCount > 0) {
-      next()
-    } else {
+    try {
+      console.log('Current app instance:', appInstance)
+      console.log('Current NFT counts:', {
+        warpBois: appInstance?.warpBoisCount,
+        tac: appInstance?.tacCount
+      })
+
+      if (!appInstance) {
+        console.log('App instance not available yet - denying access')
+        next('/')
+        return
+      }
+
+      const hasRequiredNFT = appInstance.warpBoisCount > 0 || appInstance.tacCount > 0
+      
+      console.log('Route Guard Check:', {
+        route: to.path,
+        warpBoisCount: appInstance.warpBoisCount,
+        tacCount: appInstance.tacCount,
+        hasAccess: hasRequiredNFT
+      })
+      
+      if (hasRequiredNFT) {
+        console.log('Access granted - proceeding to', to.path)
+        next()
+      } else {
+        console.log('Access denied - redirecting to home')
+        next('/')
+      }
+    } catch (error) {
+      console.error('Error in route guard:', error)
       next('/')
     }
   } else {

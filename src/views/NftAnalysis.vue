@@ -2,6 +2,21 @@
   <div v-if="hasRequiredNFT" class="nft-analysis">
     <h1>NFT Analysis</h1>
     
+    <div class="view-controls">
+      <button 
+        :class="['view-button', { active: viewMode === 'wallet' }]" 
+        @click="viewMode = 'wallet'"
+      >
+        Group by Wallet
+      </button>
+      <button 
+        :class="['view-button', { active: viewMode === 'collection' }]" 
+        @click="viewMode = 'collection'"
+      >
+        Group by Collection
+      </button>
+    </div>
+
     <div class="search-section">
       <input 
         type="text" 
@@ -11,37 +26,34 @@
       >
     </div>
     
-    <div v-for="wallet in filteredWallets" :key="wallet.sei_hash" class="wallet-section">
-      <div class="wallet-header" @click="toggleWallet(wallet.sei_hash)">
-        <div class="header-content">
-          <span class="collapse-arrow" :class="{ 'collapsed': collapsedWallets[wallet.sei_hash] }">
-            ▼
-          </span>
-          <span class="wallet-label">
-            {{ wallet.label || truncateAddress(wallet.sei_hash) }}
-          </span>
-          <span class="evm-address">(EVM: {{ truncateAddress(wallet.evm_hash) }})</span>
-          <div class="wallet-stats">
-            <span class="nft-count">NFTs: {{ wallet.nfts?.length || 0 }}</span>
-            <span class="estimated-value">Est. Value: {{ calculateWalletValue(wallet.nfts) }} $SEI</span>
+    <!-- Wallet View -->
+    <div v-if="viewMode === 'wallet'">
+      <div v-for="wallet in filteredWallets" :key="wallet.sei_hash" class="wallet-section">
+        <div class="wallet-header" @click="toggleWallet(wallet.sei_hash)">
+          <div class="header-content">
+            <span class="collapse-arrow" :class="{ 'collapsed': collapsedWallets[wallet.sei_hash] }">
+              ▼
+            </span>
+            <span class="wallet-label">
+              {{ wallet.label || truncateAddress(wallet.sei_hash) }}
+            </span>
+            <span class="evm-address">(EVM: {{ truncateAddress(wallet.evm_hash) }})</span>
+            <div class="wallet-stats">
+              <span class="nft-count">NFTs: {{ wallet.nfts?.length || 0 }}</span>
+              <span class="estimated-value">Est. Value: {{ calculateWalletValue(wallet.nfts) }} $SEI</span>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div class="nft-container" v-show="!collapsedWallets[wallet.sei_hash]">
-        <div class="nft-grid">
-          <div v-for="nft in filteredNFTs(wallet.nfts)" :key="nft.name" class="nft-card">
-            <img :src="nft.image" :alt="nft.name" class="nft-image">
-            <div class="nft-info">
-              <span class="nft-name">{{ nft.name }}</span>
-              <div class="debug-info" style="color: red; font-size: 0.8em;">
-                Slug: {{ nft.collection_slug }}
-              </div>
-              <div v-if="nft.collection_stats" class="floor-price">
-                Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
-              </div>
-              <div v-else class="floor-price">
-                No stats available
+        
+        <div class="nft-container" v-show="!collapsedWallets[wallet.sei_hash]">
+          <div class="nft-grid">
+            <div v-for="nft in filteredNFTs(wallet.nfts)" :key="nft.name" class="nft-card">
+              <img :src="nft.image" :alt="nft.name" class="nft-image">
+              <div class="nft-info">
+                <span class="nft-name">{{ nft.name }}</span>
+                <div v-if="nft.collection_stats" class="floor-price">
+                  Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
+                </div>
               </div>
             </div>
           </div>
@@ -49,8 +61,55 @@
       </div>
     </div>
 
-    <div v-if="loading" class="loading">Loading NFTs...</div>
-    <div v-if="error" class="error">{{ error }}</div>
+    <!-- Collection View -->
+    <div v-else>
+      <div v-for="(nfts, collectionName) in filteredCollections" :key="collectionName" class="wallet-section">
+        <div class="wallet-header" @click="toggleCollection(collectionName)">
+          <div class="header-content">
+            <span class="collapse-arrow" :class="{ 'collapsed': collapsedCollections[collectionName] }">
+              ▼
+            </span>
+            <span class="wallet-label">{{ collectionName }}</span>
+            <div class="collection-stats">
+              <span class="stat-item">
+                <span class="stat-label">NFTs:</span>
+                {{ nfts.length }}
+              </span>
+              <span class="stat-item">
+                <span class="stat-label">Floor:</span>
+                {{ nfts[0]?.collection_stats?.current_floor_1h || 0 }} $SEI
+              </span>
+              <span class="stat-item">
+                <span class="stat-label">Volume:</span>
+                {{ formatNumber(nfts[0]?.collection_stats?.current_volume_1h) }} $SEI
+              </span>
+              <span class="stat-item">
+                <span class="stat-label">Owners:</span>
+                {{ nfts[0]?.collection_stats?.current_owners_1h || 0 }}
+              </span>
+              <span class="stat-item">
+                <span class="stat-label">Listings:</span>
+                {{ nfts[0]?.collection_stats?.current_auction_count_1h || 0 }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="nft-container" v-show="!collapsedCollections[collectionName]">
+          <div class="nft-grid">
+            <div v-for="nft in nfts" :key="nft.name" class="nft-card">
+              <img :src="nft.image" :alt="nft.name" class="nft-image">
+              <div class="nft-info">
+                <span class="nft-name">{{ nft.name }}</span>
+                <div v-if="nft.collection_stats" class="floor-price">
+                  Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <div v-else class="access-denied">
     <h2>Access Denied</h2>
@@ -66,7 +125,15 @@ const HASURA_ENDPOINT = process.env.VUE_APP_GRAPHQL_ENDPOINT // Add this to your
 export default {
   name: 'NftAnalysis',
   props: {
-    walletAddress: String
+    walletAddress: String,
+    warpBoisCount: {
+      type: Number,
+      default: 0
+    },
+    tacCount: {
+      type: Number,
+      default: 0
+    }
   },
   data() {
     return {
@@ -74,14 +141,15 @@ export default {
       loading: true,
       error: null,
       collapsedWallets: {},
-      searchQuery: ''
+      searchQuery: '',
+      viewMode: 'wallet',
+      collapsedCollections: {},
+      isDataCached: false
     }
   },
   computed: {
     hasRequiredNFT() {
-      const warpBoisCount = parseInt(localStorage.getItem('warpBoisCount') || '0');
-      const tacCount = parseInt(localStorage.getItem('tacCount') || '0');
-      return warpBoisCount > 0 || tacCount > 0;
+      return this.warpBoisCount > 0 || this.tacCount > 0;
     },
     filteredWallets() {
       if (!this.searchQuery) return this.linkedWallets
@@ -102,6 +170,41 @@ export default {
 
         return walletMatches || nftMatches
       })
+    },
+    groupedByCollection() {
+      const allNfts = this.linkedWallets.flatMap(wallet => wallet.nfts || [])
+      return allNfts.reduce((groups, nft) => {
+        // Use the name from collection_stats (GQL response)
+        const collectionName = nft.collection_stats?.name || nft.collection?.name || 'Unknown Collection'
+        if (!groups[collectionName]) {
+          groups[collectionName] = []
+        }
+        groups[collectionName].push(nft)
+        return groups
+      }, {})
+    },
+    filteredCollections() {
+      const collections = this.groupedByCollection
+      if (!this.searchQuery) return collections
+
+      const query = this.searchQuery.toLowerCase()
+      const filtered = {}
+
+      Object.entries(collections).forEach(([collectionName, nfts]) => {
+        // Search in collection name
+        const collectionMatches = collectionName.toLowerCase().includes(query)
+        
+        // Search in NFT names
+        const filteredNfts = nfts.filter(nft => 
+          nft.name.toLowerCase().includes(query)
+        )
+
+        if (collectionMatches || filteredNfts.length > 0) {
+          filtered[collectionName] = collectionMatches ? nfts : filteredNfts
+        }
+      })
+
+      return filtered
     }
   },
   methods: {
@@ -110,6 +213,18 @@ export default {
       return `${address.slice(0, 4)}...${address.slice(-4)}`
     },
     async fetchLinkedWallets() {
+      // Check cache first
+      const cachedData = sessionStorage.getItem('nftAnalysisCache')
+      if (cachedData && this.isDataCached) {
+        console.log('Loading from cache')
+        const parsed = JSON.parse(cachedData)
+        this.linkedWallets = parsed.linkedWallets
+        this.collapsedWallets = parsed.collapsedWallets
+        this.viewMode = parsed.viewMode
+        this.searchQuery = parsed.searchQuery
+        return
+      }
+
       try {
         const { data, error } = await supabase
           .from('linked_wallets')
@@ -128,6 +243,10 @@ export default {
         await Promise.all(
           this.linkedWallets.map(wallet => this.fetchNFTsForWallet(wallet))
         )
+
+        // Cache the data after fetching
+        this.cacheData()
+        this.isDataCached = true
       } catch (error) {
         console.error('Error fetching linked wallets:', error)
         this.error = 'Failed to fetch linked wallets'
@@ -247,6 +366,26 @@ export default {
       }, 0)
       
       return total.toFixed(2)
+    },
+    toggleCollection(collectionName) {
+      this.collapsedCollections[collectionName] = !this.collapsedCollections[collectionName]
+    },
+    formatNumber(value) {
+      if (!value) return '0.00'
+      return Number(value).toFixed(2)
+    },
+    cacheData() {
+      const dataToCache = {
+        linkedWallets: this.linkedWallets,
+        collapsedWallets: this.collapsedWallets,
+        viewMode: this.viewMode,
+        searchQuery: this.searchQuery
+      }
+      sessionStorage.setItem('nftAnalysisCache', JSON.stringify(dataToCache))
+    },
+    clearCache() {
+      sessionStorage.removeItem('nftAnalysisCache')
+      this.isDataCached = false
     }
   },
   async created() {
@@ -262,6 +401,15 @@ export default {
           this.fetchLinkedWallets()
         }
       }
+    }
+  },
+  updated() {
+    this.cacheData()
+  },
+  beforeUnmount() {
+    // Only clear if navigating away from the app
+    if (!document.hidden) {
+      this.cacheData()
     }
   }
 }
@@ -302,6 +450,7 @@ export default {
   align-items: center;
   gap: 10px;
   width: 100%;
+  padding: 8px 16px;
 }
 
 .collapse-arrow {
@@ -417,26 +566,26 @@ export default {
 }
 
 .collection-stats {
-  margin-top: 8px;
-  font-size: 0.9em;
-  border-top: 1px solid #333;
-  padding-top: 8px;
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+  align-items: center;
 }
 
-.stat {
+.stat-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 4px;
+  color: #42b983;
+  font-size: 0.9em;
+  padding: 4px 8px;
+  background: rgba(66, 185, 131, 0.1);
+  border-radius: 4px;
 }
 
-.label {
+.stat-label {
   color: #666;
-  min-width: 50px;
-}
-
-.value {
-  color: #fff;
+  font-size: 0.9em;
 }
 
 .diff {
@@ -478,5 +627,32 @@ export default {
   background: rgba(66, 185, 131, 0.1);
   border-radius: 4px;
   display: inline-block;
+}
+
+.view-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.view-button {
+  padding: 8px 16px;
+  background: #2c2c2c;
+  border: 1px solid #42b983;
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-button.active {
+  background: #42b983;
+  color: #1a1a1a;
+}
+
+.view-button:hover {
+  background: #3aa876;
+  color: #1a1a1a;
 }
 </style>

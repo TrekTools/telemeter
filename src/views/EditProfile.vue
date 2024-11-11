@@ -82,7 +82,15 @@ export default {
   name: 'EditProfile',
   props: {
     walletAddress: String,  // control_sei_hash
-    evmAddress: String      // control_evm_hash
+    evmAddress: String,     // control_evm_hash
+    warpBoisCount: {        // Add this prop
+      type: Number,
+      default: 0
+    },
+    tacCount: {             // Add this prop
+      type: Number,
+      default: 0
+    }
   },
   data() {
     return {
@@ -99,9 +107,7 @@ export default {
   },
   computed: {
     hasRequiredNFT() {
-      const warpBoisCount = parseInt(localStorage.getItem('warpBoisCount') || '0');
-      const tacCount = parseInt(localStorage.getItem('tacCount') || '0');
-      return warpBoisCount > 0 || tacCount > 0;
+      return this.warpBoisCount > 0 || this.tacCount > 0;
     }
   },
   methods: {
@@ -218,21 +224,53 @@ export default {
       }
     },
     async addLinkedWallet(seiHash, evmHash) {
-      const { error } = await supabase
-        .from('linked_wallets')
-        .insert({
-          uuid: uuidv4(),
-          control_sei_hash: this.walletAddress,
-          control_evm_hash: this.evmAddress,
-          sei_hash: seiHash,
-          evm_hash: evmHash,
-          label: '',  // Initialize empty label
-          timestamp: new Date().toISOString()
-        })
+      try {
+        // First check if wallet pair already exists
+        const { data: existingWallet, error: checkError } = await supabase
+          .from('linked_wallets')
+          .select('*')
+          .eq('control_sei_hash', this.walletAddress)
+          .eq('sei_hash', seiHash)
+          .eq('evm_hash', evmHash)
+          .maybeSingle()
 
-      if (error) {
-        console.error('Error adding linked wallet:', error)
-        throw error
+        if (checkError) {
+          console.error('Error checking existing wallet:', checkError)
+          throw checkError
+        }
+
+        // If wallet already exists, don't add it again
+        if (existingWallet) {
+          console.log('Wallet pair already exists')
+          return
+        }
+
+        // If wallet doesn't exist, add it
+        const { error: insertError } = await supabase
+          .from('linked_wallets')
+          .insert({
+            uuid: uuidv4(),
+            control_sei_hash: this.walletAddress,
+            control_evm_hash: this.evmAddress,
+            sei_hash: seiHash,
+            evm_hash: evmHash,
+            label: '',
+            timestamp: new Date().toISOString()
+          })
+
+        if (insertError) {
+          console.error('Error adding linked wallet:', insertError)
+          throw insertError
+        }
+
+        // Clear NFT Analysis cache after adding wallet
+        this.clearNFTAnalysisCache()
+        
+        // Refresh the wallet list
+        await this.loadLinkedWallets()
+      } catch (error) {
+        console.error('Error in addLinkedWallet:', error)
+        this.inputError = 'Error adding wallet: Wallet may already be linked'
       }
     },
     async deleteLinkedWallet(uuid) {
@@ -258,7 +296,8 @@ export default {
 
         if (error) throw error
 
-        // Refresh the list
+        // Clear NFT Analysis cache after deleting wallet
+        this.clearNFTAnalysisCache()
         await this.loadLinkedWallets()
       } catch (error) {
         console.error('Error deleting linked wallet:', error)
@@ -301,6 +340,9 @@ export default {
       setTimeout(() => {
         this.toast = null
       }, 3000)
+    },
+    clearNFTAnalysisCache() {
+      sessionStorage.removeItem('nftAnalysisCache')
     }
   }
 }

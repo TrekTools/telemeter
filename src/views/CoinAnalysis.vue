@@ -11,12 +11,20 @@
 
 <script>
 export default {
-  name: 'EditProfile',
+  name: 'CoinAnalysis',
+  props: {
+    warpBoisCount: {
+      type: Number,
+      default: 0
+    },
+    tacCount: {
+      type: Number,
+      default: 0
+    }
+  },
   computed: {
     hasRequiredNFT() {
-      const warpBoisCount = parseInt(localStorage.getItem('warpBoisCount') || '0');
-      const tacCount = parseInt(localStorage.getItem('tacCount') || '0');
-      return warpBoisCount > 0 || tacCount > 0;
+      return this.warpBoisCount > 0 || this.tacCount > 0;
     }
   }
 }
