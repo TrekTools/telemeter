@@ -58,17 +58,24 @@
       </div>
     </nav>
   </div>
+  <CommandToast 
+    :wallet-connected="isConnected"
+    @connect-wallet="handleConnect"
+    @disconnect-wallet="disconnectWallet"
+  />
 </template>
 
 <script>
 import NftConveyor from './components/NftConveyor.vue'
+import CommandToast from '@/components/CommandToast.vue'
 import supabase from './supabase'  // Import shared instance
 import { v4 as uuidv4 } from 'uuid'
 
 export default {
   name: 'App',
   components: {
-    NftConveyor
+    NftConveyor,
+    CommandToast
   },
   data() {
     return {
