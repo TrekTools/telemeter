@@ -217,6 +217,281 @@ export default {
       }
       return rankOrder[rank.toLowerCase()] || Infinity
     },
+    generatePageGreeting(currentRoute, traits) {
+      // Base context messages for each page
+      const baseContexts = {
+        '/nft': "Ooh, there's lots of lovely JPEGs (and GIFs) in here!",
+        '/portfolio': "Let's see how your investments are performing today.",
+        '/coins': "Numbers go up, numbers go down... but mostly up, right??",
+        '/trends': "Let me analyze these market patterns for you.",
+        '/profile': "Welcome to your command center! All systems nominal. Amend your wallets here.",
+        '/guide': "Need help? I've got all the answers... probably.",
+        '/swap': "Ready to execute some atomic swaps! ⚛️",
+        '/stake': "Securing the network, one stake at a time! 🔐",
+        '/governance': "Your voice in the decentralized democracy! 🗳️"
+      }
+
+      // Get base context for current route
+      const baseContext = baseContexts[currentRoute]
+      if (!baseContext) return null
+
+      // Add trait-specific variations
+      switch (currentRoute) {
+        case '/nft':
+          if (traits.uniform === 'academic' && traits.left_hand === 'tricorder') {
+            return "*scanning* Fascinating collection of digital artifacts detected..."
+          } else if (traits.rank === 'admiral' && traits.mouth === 'cocky') {
+            return "Behold the finest NFT fleet in all the galaxies! 😎"
+          } else if (traits.eyes === 'sus' && traits.left_hand === 'motion tracker') {
+            return "*beep* Detecting suspicious right-click-save activity... 🚨"
+          } else if (traits.uniform === 'section 420') {
+            return "Duuude... these JPEGs are like, totally cosmic! 🌈"
+          }
+          break;
+
+        case '/portfolio':
+          if (traits.uniform === 'medical' && traits.mouth === 'concerned') {
+            return "Time for your portfolio health check-up! Vitals look... interesting. 🏥"
+          } else if (traits.eyes === 'fierce' && traits.left_hand === 'red lightsaber') {
+            return "Your gains will be UNLIMITED POWER! *ignites saber* ⚡"
+          } else if (traits.rank === 'cadet' && traits.mouth === 'wow') {
+            return "Sir! These returns are INCREDIBLE, sir! Permission to ape in?! 🚀"
+          } else if (traits.left_hand === 'neuralizer') {
+            return "Don't worry about those red numbers... *flash* What red numbers? 😅"
+          }
+          break;
+
+        case '/coins':
+          if (traits.uniform === 'engineering' && traits.mouth === 'thinking') {
+            return "*adjusts algorithms* Calculating optimal moon trajectory... 🌙"
+          } else if (traits.eyes === 'wild' && traits.rank === 'admiral') {
+            return "ALL HANDS ON DECK! EXTREME VOLATILITY DETECTED! 📊"
+          } else if (traits.left_hand === 'tricorder') {
+            return "*scanning* Multiple bullish patterns detected in sector 7G..."
+          } else if (traits.uniform === 'section 420') {
+            return "Whoa... these charts are like, totally doing the thing! 📈"
+          }
+          break;
+
+        case '/trends':
+          if (traits.uniform === 'academic') {
+            return "According to my technical analysis thesis paper... 📚"
+          } else if (traits.eyes === 'sus' && traits.mouth === 'thinking') {
+            return "*squints at charts* Something's definitely happening here... 🤔"
+          } else if (traits.left_hand === 'motion tracker') {
+            return "*beep* Whale movement detected in multiple sectors! 🐋"
+          } else if (traits.rank === 'admiral') {
+            return "Strategic market intelligence briefing ready, admiral! 📋"
+          }
+          break;
+
+        case '/profile':
+          if (traits.uniform === 'medical') {
+            return "Time for your annual account check-up! Say 'ahhh'... 👨‍⚕️"
+          } else if (traits.left_hand === 'gorgeous blue ale') {
+            return "*raises glass* Your profile deserves a toast! 🍻"
+          } else if (traits.mouth === 'cocky') {
+            return "Behold your glorious trading empire! 👑"
+          } else if (traits.eyes === 'concerned') {
+            return "Um... have you been making trades without consulting me? 😰"
+          }
+          break;
+
+        case '/guide':
+          if (traits.uniform === 'academic') {
+            return "Please take notes, this will be on the test! 📝"
+          } else if (traits.mouth === 'uhhh') {
+            return "I think this button does... something? Let's find out! 🤷"
+          } else if (traits.rank === 'admiral') {
+            return "Attention cadets! Basic training protocols initiated! 🎖️"
+          } else if (traits.left_hand === 'tricorder') {
+            return "*scanning* Detecting high levels of alpha in these guides... 📱"
+          }
+          break;
+
+        case '/swap':
+          if (traits.uniform === 'engineering') {
+            return "Quantum swap engines primed and ready! ⚛️"
+          } else if (traits.eyes === 'sus') {
+            return "Checking slippage... double checking slippage... 🔍"
+          } else if (traits.left_hand === 'neuralizer') {
+            return "You won't remember the old token price... *flash* 💫"
+          }
+          break;
+
+        case '/stake':
+          if (traits.uniform === 'formal') {
+            return "*adjusts tie* Your tokens will be safely secured, sir. 🔒"
+          } else if (traits.mouth === 'wow') {
+            return "Look at those APY numbers! TO THE MOON! 🚀"
+          } else if (traits.rank === 'captain') {
+            return "Staking stations ready, maximum yield engaged! 💰"
+          }
+          break;
+
+        case '/governance':
+          if (traits.uniform === 'embassy') {
+            return "Your diplomatic voting rights are ready to be exercised! 🗳️"
+          } else if (traits.rank === 'admiral') {
+            return "The future of the protocol awaits your command! ⚖️"
+          } else if (traits.mouth === 'thinking') {
+            return "*reading proposal* Hmm, very interesting governance strategy... 🤔"
+          }
+          break;
+      }
+
+      // Return base context if no trait-specific variation matches
+      return baseContext
+    },
+
+    generateDefaultGreeting(traits) {
+      // Default greetings based on combined traits
+      if (traits.rank === 'admiral' && traits.uniform === 'command') {
+        return "Fleet command center standing by for orders."
+      } else if (traits.left_hand === 'tricorder' && traits.uniform === 'medical') {
+        return "*scanning* All systems functioning within normal parameters."
+      } else if (traits.eyes === 'sus' && traits.mouth === 'thinking') {
+        return "*narrows eyes* Something seems... interesting about this request..."
+      }
+      
+      // Fallback to rank-based defaults
+      switch (traits.rank) {
+        case 'admiral':
+          return "Standing by for your next command, admiral."
+        case 'commodore':
+          return "Battle station fully operational, commodore."
+        case 'captain':
+          return "Bridge systems ready, captain."
+        case 'commander':
+          return "Command protocols active, commander."
+        case 'lieutenant':
+          return "Lieutenant on duty, awaiting orders!"
+        case 'cadet':
+          return "Cadet reporting for duty, sir!"
+        default:
+          return "Terminal systems online. How may I assist?"
+      }
+    },
+
+    generateHomeGreeting(traits) {
+      let greeting = `Greetings, I am ${traits.name || `Warp Boi #${this.activeWarpBoi.id}`}, your ${traits.rank} terminal operator.`
+      
+      // Add ALL existing trait-based personality modifications here
+      // ... keep ALL your existing eye cases ...
+      switch (traits.eyes) {
+        case 'sus':
+          greeting += " *squints suspiciously* I'm watching everything you type..."
+          break
+        case 'amazed':
+          greeting += " Wow! The possibilities with this terminal are ENDLESS!"
+          break
+        case 'concerned':
+          greeting += " I hope you know what you're doing with these commands..."
+          break
+        case 'fierce':
+          greeting += " Ready to execute your commands with MAXIMUM INTENSITY!"
+          break
+        case 'wild':
+          greeting += " ANYTHING COULD HAPPEN WITH THIS TERMINAL! ANYTHING!"
+          break
+        case 'happy':
+          greeting += " It's such a pleasure to assist you today! ^_^"
+          break
+      }
+
+      // ... keep ALL your existing mouth cases ...
+      switch (traits.mouth) {
+        case 'wow':
+          greeting += " This terminal is INCREDIBLE! Every button does something AMAZING!"
+          break
+        case 'uhhh':
+          greeting += " Uhhhh... I mean, I think I know how this terminal works..."
+          break
+        case 'thinking':
+          greeting += " *contemplating deeply* Each command must be carefully considered..."
+          break
+        case 'unimpressed':
+          greeting += " *yawns* Another day, another terminal session..."
+          break
+        case 'cocky':
+          greeting += " Trust me, I'm the BEST terminal operator you'll ever meet. 😎"
+          break
+      }
+
+      // ... keep ALL your existing uniform cases ...
+      switch (traits.uniform) {
+        case 'command':
+          greeting += " All systems are operating at peak efficiency. Awaiting your orders."
+          break
+        case 'formal':
+          greeting += " *adjusts tie* I pride myself on maintaining the utmost professionalism."
+          break
+        case 'engineering':
+          greeting += " *tightens bolt* Just finished optimizing the terminal's quantum processors!"
+          break
+        case 'academic':
+          greeting += " According to my latest research, this terminal has fascinating capabilities..."
+          break
+        case 'embassy':
+          greeting += " As your diplomatic liaison, I'll ensure smooth inter-blockchain relations."
+          break
+        case 'specialist':
+          greeting += " My advanced training has prepared me for any technical challenge."
+          break
+        case 'section 420':
+          greeting += " Duuude... this terminal is like, totally cosmic... *cough*"
+          break
+        case 'medical':
+          greeting += " Terminal diagnostics complete. All systems are healthy! 🏥"
+          break
+      }
+
+      // ... keep ALL your existing left_hand cases ...
+      switch (traits.left_hand) {
+        case 'gorgeous blue ale':
+          greeting += " *sips elegantly* This terminal pairs nicely with a fine quantum-aged ale."
+          break
+        case 'gold lightsaber':
+          greeting += " *golden glow illuminates terminal* A refined weapon for a more civilized age."
+          break
+        case 'neuralizer':
+          greeting += " Please ignore the red flash, you won't remember it anyway..."
+          break
+        case 'medpac':
+          greeting += " Don't worry, I'm fully equipped to handle any system emergencies!"
+          break
+        case 'blue lightsaber':
+          greeting += " *hums peacefully* The Force guides my terminal operations."
+          break
+        case 'motion tracker':
+          greeting += " *beep* ...detecting user input patterns... *beep*"
+          break
+        case 'green lightsaber':
+          greeting += " Wisdom and patience guide my terminal assistance."
+          break
+        case 'kill phaser':
+          greeting += " Terminal security is my top priority. MAXIMUM enforcement ready."
+          break
+        case 'phaser rifle':
+          greeting += " Long-range problem solving is my specialty. Very long range."
+          break
+        case 'communicator':
+          greeting += " *chirp* All communication channels open and monitored."
+          break
+        case 'stun phaser':
+          greeting += " Don't worry, it's set to stun... usually."
+          break
+        case 'red lightsaber':
+          greeting += " *menacing hum* The dark side offers many capabilities..."
+          break
+        case 'tricorder':
+          greeting += " *scanning* Terminal diagnostics show optimal performance."
+          break
+      }
+
+      return greeting
+    },
+
     generateGreeting() {
       if (!this.activeWarpBoi) return ''
       
@@ -226,66 +501,15 @@ export default {
       }, {})
 
       const currentRoute = this.$route.path
-      let greeting = ''
-
-      // Initial greeting only on home page
+      
+      // Home page gets the full introduction
       if (currentRoute === '/') {
-        greeting = `Greetings, I am ${traits.name || `Warp Boi #${this.activeWarpBoi.id}`}, your ${traits.rank} terminal operator.`
-        
-        // Add trait-specific comments only on home
-        if (traits.eyes === 'wat') {
-          greeting += " I'm a bit confused by all this technology..."
-        }
-        if (traits.mouth === 'thinking') {
-          greeting += " Let me ponder your requests carefully."
-        }
-        if (traits.uniform === 'section 420') {
-          greeting += " Don't mind the smoke, it helps me process commands better."
-        }
-        if (traits.left_hand === 'neuralizer') {
-          greeting += " Just don't look directly at this device in my hand..."
-        }
-        if (traits.right_hand === 'red lightsaber') {
-          greeting += " And yes, I am authorized to carry this weapon."
-        }
-        
-        return greeting
+        return this.generateHomeGreeting(traits)
       }
-
-      // Page-specific messages only
-      switch (currentRoute) {
-        case '/nft':
-          greeting = "Ooh, there's some lovely JPGs (and GIFs) in here! Let me analyze those pixels for you."
-          break
-        case '/portfolio':
-          greeting = traits.rank === 'financial advisor' 
-            ? "As your financial advisor, I must remind you this is not financial advice! But these numbers look interesting..."
-            : "Let's see how your investments are performing today."
-          break
-        case '/coins':
-          greeting = traits.eyes === 'wat'
-            ? "These charts are making me dizzy... but I think that green line means good things!"
-            : "Numbers go up, numbers go down... but mostly up, right??"
-          break
-        case '/trends':
-          greeting = traits.mouth === 'thinking'
-            ? "Hmm, these patterns are quite interesting... I'm seeing a definite trend towards more trends."
-            : "Let me consult my crystal ball- I mean, advanced market analysis tools."
-          break
-        case '/profile':
-          greeting = "Your command center! Here is where you can add and remove wallets for analysis. And soon from multiple chains!"
-          break
-        case '/guide':
-          greeting = traits.uniform === 'section 420'
-            ? "I've got all the manuals right here! Though I might have used some pages for... alternative purposes."
-            : "Need help? I've got all the documentation ready for your perusal!"
-          break
-        case '/about':
-          greeting = "Want to know more about our secret- I mean, special operations?"
-          break
-      }
-
-      return greeting
+      
+      // Other pages get context-sensitive greetings
+      const contextGreeting = this.generatePageGreeting(currentRoute, traits)
+      return contextGreeting || this.generateDefaultGreeting(traits)
     },
     executeCommand() {
       if (!this.command.trim()) return

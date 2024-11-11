@@ -1,0 +1,1070 @@
+{
+    "1:1": [
+        {
+            "display_type": null,
+            "value": "007 Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Bad Seiyan Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Below Zero Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Buden Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Bull Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Bump Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Colony Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Deenald Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Dob Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Dot Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Farm Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Good Seiyan Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Naked Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Orbiter Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Outlined Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Rob Boss Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Scorp Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Short Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Wide Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        },
+        {
+            "display_type": null,
+            "value": "Yaka Boi",
+            "num_tokens": 1,
+            "rarity": {
+                "rank": 1,
+                "score": 12.077149516
+            }
+        }
+    ],
+    "background": [
+        {
+            "display_type": null,
+            "value": "rust",
+            "num_tokens": 440,
+            "rarity": {
+                "rank": 31,
+                "score": 3.295789802
+            }
+        },
+        {
+            "display_type": null,
+            "value": "lilac",
+            "num_tokens": 453,
+            "rarity": {
+                "rank": 33,
+                "score": 3.253782276
+            }
+        },
+        {
+            "display_type": null,
+            "value": "swedish green",
+            "num_tokens": 454,
+            "rarity": {
+                "rank": 34,
+                "score": 3.250601028
+            }
+        },
+        {
+            "display_type": null,
+            "value": "atomic tangerine",
+            "num_tokens": 484,
+            "rarity": {
+                "rank": 37,
+                "score": 3.158286278
+            }
+        },
+        {
+            "display_type": null,
+            "value": "mariner",
+            "num_tokens": 484,
+            "rarity": {
+                "rank": 37,
+                "score": 3.158286278
+            }
+        },
+        {
+            "display_type": null,
+            "value": "orange peel",
+            "num_tokens": 487,
+            "rarity": {
+                "rank": 38,
+                "score": 3.149371554
+            }
+        },
+        {
+            "display_type": null,
+            "value": "golden tanoi",
+            "num_tokens": 493,
+            "rarity": {
+                "rank": 39,
+                "score": 3.131705679
+            }
+        },
+        {
+            "display_type": null,
+            "value": "pale canary",
+            "num_tokens": 493,
+            "rarity": {
+                "rank": 39,
+                "score": 3.131705679
+            }
+        },
+        {
+            "display_type": null,
+            "value": "melrose",
+            "num_tokens": 513,
+            "rarity": {
+                "rank": 42,
+                "score": 3.0743345
+            }
+        }
+    ],
+    "eyes": [
+        {
+            "display_type": null,
+            "value": "sus",
+            "num_tokens": 577,
+            "rarity": {
+                "rank": 61,
+                "score": 2.904722007
+            }
+        },
+        {
+            "display_type": null,
+            "value": "wat",
+            "num_tokens": 595,
+            "rarity": {
+                "rank": 64,
+                "score": 2.860403657
+            }
+        },
+        {
+            "display_type": null,
+            "value": "amazed",
+            "num_tokens": 598,
+            "rarity": {
+                "rank": 65,
+                "score": 2.853147841
+            }
+        },
+        {
+            "display_type": null,
+            "value": "concerned",
+            "num_tokens": 620,
+            "rarity": {
+                "rank": 70,
+                "score": 2.80102511
+            }
+        },
+        {
+            "display_type": null,
+            "value": "fierce",
+            "num_tokens": 622,
+            "rarity": {
+                "rank": 71,
+                "score": 2.796378745
+            }
+        },
+        {
+            "display_type": null,
+            "value": "wild",
+            "num_tokens": 630,
+            "rarity": {
+                "rank": 73,
+                "score": 2.777941497
+            }
+        },
+        {
+            "display_type": null,
+            "value": "happy",
+            "num_tokens": 659,
+            "rarity": {
+                "rank": 74,
+                "score": 2.713014861
+            }
+        }
+    ],
+    "face": [
+        {
+            "display_type": null,
+            "value": "seilon",
+            "num_tokens": 37,
+            "rarity": {
+                "rank": 2,
+                "score": 6.86769615
+            }
+        },
+        {
+            "display_type": null,
+            "value": "visor",
+            "num_tokens": 91,
+            "rarity": {
+                "rank": 4,
+                "score": 5.569354875
+            }
+        },
+        {
+            "display_type": null,
+            "value": "borg",
+            "num_tokens": 217,
+            "rarity": {
+                "rank": 12,
+                "score": 4.315598283
+            }
+        },
+        {
+            "display_type": null,
+            "value": "scar",
+            "num_tokens": 223,
+            "rarity": {
+                "rank": 14,
+                "score": 4.276249616
+            }
+        },
+        {
+            "display_type": null,
+            "value": "sunglasses",
+            "num_tokens": 430,
+            "rarity": {
+                "rank": 27,
+                "score": 3.328956666
+            }
+        },
+        {
+            "display_type": null,
+            "value": "glasses",
+            "num_tokens": 438,
+            "rarity": {
+                "rank": 30,
+                "score": 3.302362456
+            }
+        },
+        {
+            "display_type": null,
+            "value": "glasses_3d",
+            "num_tokens": 469,
+            "rarity": {
+                "rank": 36,
+                "score": 3.203705403
+            }
+        },
+        {
+            "display_type": null,
+            "value": "headset",
+            "num_tokens": 496,
+            "rarity": {
+                "rank": 40,
+                "score": 3.122953205
+            }
+        },
+        {
+            "display_type": null,
+            "value": "seiyan_tech",
+            "num_tokens": 620,
+            "rarity": {
+                "rank": 70,
+                "score": 2.80102511
+            }
+        },
+        {
+            "display_type": null,
+            "value": "clean",
+            "num_tokens": 1280,
+            "rarity": {
+                "rank": 82,
+                "score": 1.755221421
+            }
+        }
+    ],
+    "head": [
+        {
+            "display_type": null,
+            "value": "bald",
+            "num_tokens": 582,
+            "rarity": {
+                "rank": 62,
+                "score": 2.892274173
+            }
+        },
+        {
+            "display_type": null,
+            "value": "headband",
+            "num_tokens": 589,
+            "rarity": {
+                "rank": 63,
+                "score": 2.875025692
+            }
+        },
+        {
+            "display_type": null,
+            "value": "antenna_tv",
+            "num_tokens": 612,
+            "rarity": {
+                "rank": 66,
+                "score": 2.819761673
+            }
+        },
+        {
+            "display_type": null,
+            "value": "antenna",
+            "num_tokens": 616,
+            "rarity": {
+                "rank": 67,
+                "score": 2.810362975
+            }
+        },
+        {
+            "display_type": null,
+            "value": "conehead",
+            "num_tokens": 618,
+            "rarity": {
+                "rank": 68,
+                "score": 2.805686488
+            }
+        },
+        {
+            "display_type": null,
+            "value": "cat",
+            "num_tokens": 619,
+            "rarity": {
+                "rank": 69,
+                "score": 2.803353916
+            }
+        },
+        {
+            "display_type": null,
+            "value": "beanie",
+            "num_tokens": 665,
+            "rarity": {
+                "rank": 75,
+                "score": 2.699938985
+            }
+        }
+    ],
+    "left_hand": [
+        {
+            "display_type": null,
+            "value": "gorgeous blue ale",
+            "num_tokens": 106,
+            "rarity": {
+                "rank": 5,
+                "score": 5.349229061
+            }
+        },
+        {
+            "display_type": null,
+            "value": "gold lightsaber",
+            "num_tokens": 134,
+            "rarity": {
+                "rank": 6,
+                "score": 5.011060325
+            }
+        },
+        {
+            "display_type": null,
+            "value": "purple lightsaber",
+            "num_tokens": 152,
+            "rarity": {
+                "rank": 8,
+                "score": 4.829222002
+            }
+        },
+        {
+            "display_type": null,
+            "value": "neuralizer",
+            "num_tokens": 218,
+            "rarity": {
+                "rank": 13,
+                "score": 4.308965191
+            }
+        },
+        {
+            "display_type": null,
+            "value": "medpac",
+            "num_tokens": 223,
+            "rarity": {
+                "rank": 14,
+                "score": 4.276249616
+            }
+        },
+        {
+            "display_type": null,
+            "value": "blue lightsaber",
+            "num_tokens": 230,
+            "rarity": {
+                "rank": 15,
+                "score": 4.231659465
+            }
+        },
+        {
+            "display_type": null,
+            "value": "motion tracker",
+            "num_tokens": 240,
+            "rarity": {
+                "rank": 16,
+                "score": 4.17025892
+            }
+        },
+        {
+            "display_type": null,
+            "value": "green lightsaber",
+            "num_tokens": 359,
+            "rarity": {
+                "rank": 20,
+                "score": 3.589309482
+            }
+        },
+        {
+            "display_type": null,
+            "value": "kill phaser",
+            "num_tokens": 379,
+            "rarity": {
+                "rank": 22,
+                "score": 3.511095477
+            }
+        },
+        {
+            "display_type": null,
+            "value": "phaser rifle",
+            "num_tokens": 399,
+            "rarity": {
+                "rank": 25,
+                "score": 3.436904579
+            }
+        },
+        {
+            "display_type": null,
+            "value": "communicator",
+            "num_tokens": 435,
+            "rarity": {
+                "rank": 28,
+                "score": 3.312277925
+            }
+        },
+        {
+            "display_type": null,
+            "value": "stun phaser",
+            "num_tokens": 437,
+            "rarity": {
+                "rank": 29,
+                "score": 3.305660046
+            }
+        },
+        {
+            "display_type": null,
+            "value": "tricorder",
+            "num_tokens": 458,
+            "rarity": {
+                "rank": 35,
+                "score": 3.237945727
+            }
+        },
+        {
+            "display_type": null,
+            "value": "red lightsaber",
+            "num_tokens": 531,
+            "rarity": {
+                "rank": 49,
+                "score": 3.024581465
+            }
+        }
+    ],
+    "mouth": [
+        {
+            "display_type": null,
+            "value": "wow",
+            "num_tokens": 835,
+            "rarity": {
+                "rank": 76,
+                "score": 2.371517128
+            }
+        },
+        {
+            "display_type": null,
+            "value": "uhhh",
+            "num_tokens": 842,
+            "rarity": {
+                "rank": 77,
+                "score": 2.359473093
+            }
+        },
+        {
+            "display_type": null,
+            "value": "thinking",
+            "num_tokens": 846,
+            "rarity": {
+                "rank": 78,
+                "score": 2.352635662
+            }
+        },
+        {
+            "display_type": null,
+            "value": "unimpressed",
+            "num_tokens": 885,
+            "rarity": {
+                "rank": 79,
+                "score": 2.287615871
+            }
+        },
+        {
+            "display_type": null,
+            "value": "cocky",
+            "num_tokens": 893,
+            "rarity": {
+                "rank": 80,
+                "score": 2.27463315
+            }
+        }
+    ],
+    "orb": [
+        {
+            "display_type": null,
+            "value": "pewter",
+            "num_tokens": 506,
+            "rarity": {
+                "rank": 41,
+                "score": 3.094155941
+            }
+        },
+        {
+            "display_type": null,
+            "value": "dark yellow",
+            "num_tokens": 526,
+            "rarity": {
+                "rank": 47,
+                "score": 3.038230526
+            }
+        },
+        {
+            "display_type": null,
+            "value": "dodger soft",
+            "num_tokens": 526,
+            "rarity": {
+                "rank": 47,
+                "score": 3.038230526
+            }
+        },
+        {
+            "display_type": null,
+            "value": "cosmic",
+            "num_tokens": 534,
+            "rarity": {
+                "rank": 51,
+                "score": 3.016453584
+            }
+        },
+        {
+            "display_type": null,
+            "value": "tamarillo",
+            "num_tokens": 534,
+            "rarity": {
+                "rank": 51,
+                "score": 3.016453584
+            }
+        },
+        {
+            "display_type": null,
+            "value": "cardin",
+            "num_tokens": 544,
+            "rarity": {
+                "rank": 54,
+                "score": 2.989686674
+            }
+        },
+        {
+            "display_type": null,
+            "value": "danub",
+            "num_tokens": 556,
+            "rarity": {
+                "rank": 58,
+                "score": 2.958208443
+            }
+        },
+        {
+            "display_type": null,
+            "value": "sea green",
+            "num_tokens": 575,
+            "rarity": {
+                "rank": 60,
+                "score": 2.90973137
+            }
+        }
+    ],
+    "rank": [
+        {
+            "display_type": null,
+            "value": "admiral",
+            "num_tokens": 152,
+            "rarity": {
+                "rank": 8,
+                "score": 4.829222002
+            }
+        },
+        {
+            "display_type": null,
+            "value": "commodore",
+            "num_tokens": 288,
+            "rarity": {
+                "rank": 18,
+                "score": 3.907224514
+            }
+        },
+        {
+            "display_type": null,
+            "value": "captain",
+            "num_tokens": 380,
+            "rarity": {
+                "rank": 23,
+                "score": 3.507293907
+            }
+        },
+        {
+            "display_type": null,
+            "value": "commander",
+            "num_tokens": 623,
+            "rarity": {
+                "rank": 72,
+                "score": 2.794061163
+            }
+        },
+        {
+            "display_type": null,
+            "value": "lieutenant",
+            "num_tokens": 1033,
+            "rarity": {
+                "rank": 81,
+                "score": 2.064524977
+            }
+        },
+        {
+            "display_type": null,
+            "value": "cadet",
+            "num_tokens": 1825,
+            "rarity": {
+                "rank": 83,
+                "score": 1.243468767
+            }
+        }
+    ],
+    "right_hand": [
+        {
+            "display_type": null,
+            "value": "gorgeous blue ale",
+            "num_tokens": 87,
+            "rarity": {
+                "rank": 3,
+                "score": 5.63420602
+            }
+        },
+        {
+            "display_type": null,
+            "value": "gold lightsaber",
+            "num_tokens": 143,
+            "rarity": {
+                "rank": 7,
+                "score": 4.917278179
+            }
+        },
+        {
+            "display_type": null,
+            "value": "purple lightsaber",
+            "num_tokens": 176,
+            "rarity": {
+                "rank": 9,
+                "score": 4.617717897
+            }
+        },
+        {
+            "display_type": null,
+            "value": "neuralizer",
+            "num_tokens": 181,
+            "rarity": {
+                "rank": 10,
+                "score": 4.577303629
+            }
+        },
+        {
+            "display_type": null,
+            "value": "medpac",
+            "num_tokens": 211,
+            "rarity": {
+                "rank": 11,
+                "score": 4.356050327
+            }
+        },
+        {
+            "display_type": null,
+            "value": "blue lightsaber",
+            "num_tokens": 258,
+            "rarity": {
+                "rank": 17,
+                "score": 4.06592226
+            }
+        },
+        {
+            "display_type": null,
+            "value": "motion tracker",
+            "num_tokens": 258,
+            "rarity": {
+                "rank": 17,
+                "score": 4.06592226
+            }
+        },
+        {
+            "display_type": null,
+            "value": "green lightsaber",
+            "num_tokens": 351,
+            "rarity": {
+                "rank": 19,
+                "score": 3.621822295
+            }
+        },
+        {
+            "display_type": null,
+            "value": "kill phaser",
+            "num_tokens": 370,
+            "rarity": {
+                "rank": 21,
+                "score": 3.545768055
+            }
+        },
+        {
+            "display_type": null,
+            "value": "phaser rifle",
+            "num_tokens": 391,
+            "rarity": {
+                "rank": 24,
+                "score": 3.466124718
+            }
+        },
+        {
+            "display_type": null,
+            "value": "communicator",
+            "num_tokens": 404,
+            "rarity": {
+                "rank": 26,
+                "score": 3.418938033
+            }
+        },
+        {
+            "display_type": null,
+            "value": "stun phaser",
+            "num_tokens": 443,
+            "rarity": {
+                "rank": 32,
+                "score": 3.285986627
+            }
+        },
+        {
+            "display_type": null,
+            "value": "red lightsaber",
+            "num_tokens": 513,
+            "rarity": {
+                "rank": 42,
+                "score": 3.0743345
+            }
+        },
+        {
+            "display_type": null,
+            "value": "tricorder",
+            "num_tokens": 515,
+            "rarity": {
+                "rank": 44,
+                "score": 3.068720894
+            }
+        }
+    ],
+    "skin_tone": [
+        {
+            "display_type": null,
+            "value": "dodger pale",
+            "num_tokens": 513,
+            "rarity": {
+                "rank": 42,
+                "score": 3.0743345
+            }
+        },
+        {
+            "display_type": null,
+            "value": "chestnut rose",
+            "num_tokens": 518,
+            "rarity": {
+                "rank": 45,
+                "score": 3.060341228
+            }
+        },
+        {
+            "display_type": null,
+            "value": "hopbush",
+            "num_tokens": 532,
+            "rarity": {
+                "rank": 50,
+                "score": 3.02186708
+            }
+        },
+        {
+            "display_type": null,
+            "value": "eggplant",
+            "num_tokens": 540,
+            "rarity": {
+                "rank": 53,
+                "score": 3.000333919
+            }
+        },
+        {
+            "display_type": null,
+            "value": "pewter",
+            "num_tokens": 540,
+            "rarity": {
+                "rank": 53,
+                "score": 3.000333919
+            }
+        },
+        {
+            "display_type": null,
+            "value": "tanoi",
+            "num_tokens": 547,
+            "rarity": {
+                "rank": 56,
+                "score": 2.981752493
+            }
+        },
+        {
+            "display_type": null,
+            "value": "periwinkle",
+            "num_tokens": 554,
+            "rarity": {
+                "rank": 57,
+                "score": 2.96340735
+            }
+        },
+        {
+            "display_type": null,
+            "value": "pale canary",
+            "num_tokens": 557,
+            "rarity": {
+                "rank": 59,
+                "score": 2.955615998
+            }
+        }
+    ],
+    "uniform": [
+        {
+            "display_type": null,
+            "value": "command",
+            "num_tokens": 514,
+            "rarity": {
+                "rank": 43,
+                "score": 3.071524966
+            }
+        },
+        {
+            "display_type": null,
+            "value": "formal",
+            "num_tokens": 519,
+            "rarity": {
+                "rank": 46,
+                "score": 3.057558787
+            }
+        },
+        {
+            "display_type": null,
+            "value": "engineering",
+            "num_tokens": 526,
+            "rarity": {
+                "rank": 47,
+                "score": 3.038230526
+            }
+        },
+        {
+            "display_type": null,
+            "value": "academic",
+            "num_tokens": 527,
+            "rarity": {
+                "rank": 48,
+                "score": 3.035490364
+            }
+        },
+        {
+            "display_type": null,
+            "value": "embassy",
+            "num_tokens": 539,
+            "rarity": {
+                "rank": 52,
+                "score": 3.003008053
+            }
+        },
+        {
+            "display_type": null,
+            "value": "specialist",
+            "num_tokens": 545,
+            "rarity": {
+                "rank": 55,
+                "score": 2.987037096
+            }
+        },
+        {
+            "display_type": null,
+            "value": "section 420",
+            "num_tokens": 556,
+            "rarity": {
+                "rank": 58,
+                "score": 2.958208443
+            }
+        },
+        {
+            "display_type": null,
+            "value": "medical",
+            "num_tokens": 575,
+            "rarity": {
+                "rank": 60,
+                "score": 2.90973137
+            }
+        }
+    ]
+}
