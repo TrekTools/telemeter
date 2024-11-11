@@ -20,6 +20,8 @@
     :tac-count="tacCount"
     @connect-wallet="handleConnect"
     @disconnect-wallet="disconnectWallet"
+    @terminal-hidden="handleTerminalHidden"
+    ref="commandToast"
   />
 
   <NftConveyor 
@@ -36,6 +38,14 @@
       <router-link to="/about" class="nav-link">About</router-link>
       <router-link to="/guide" class="nav-link">Guide</router-link>
       
+      <!-- Add terminal indicator -->
+      <div v-if="terminalHidden" 
+           class="terminal-indicator" 
+           @click="showTerminal">
+        <span class="terminal-dot"></span>
+        Terminal
+      </div>
+
       <!-- Protected routes only shown when NFTs are owned -->
       <template v-if="warpBoisCount > 0 || tacCount > 0">
         <router-link to="/portfolio" class="nav-link">Portfolio</router-link>
@@ -70,7 +80,6 @@
       </div>
     </nav>
   </div>
-  <NftConveyor />
 </template>
 
 <script>
@@ -96,7 +105,8 @@ export default {
       warpTokenCount: 0,
       isDrawerOpen: false,
       isMobile: false,
-      activeWarpBoi: null
+      activeWarpBoi: null,
+      terminalHidden: false
     }
   },
   created() {
@@ -242,6 +252,15 @@ export default {
         } catch (error) {
           console.error('Error disconnecting Compass wallet:', error)
         }
+      }
+    },
+    handleTerminalHidden(hidden) {
+      this.terminalHidden = hidden
+    },
+    showTerminal() {
+      if (this.$refs.commandToast) {
+        this.$refs.commandToast.hidden = false
+        this.terminalHidden = false
       }
     }
   }
@@ -522,5 +541,28 @@ body {
   position: fixed;
   z-index: 1000;
   /* Initial position is set in the component */
+}
+
+.terminal-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #42b983;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.terminal-indicator:hover {
+  background-color: #3c3c3c;
+}
+
+.terminal-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #27c93f;
+  border-radius: 50%;
+  display: inline-block;
 }
 </style>

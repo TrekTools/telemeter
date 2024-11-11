@@ -1,5 +1,15 @@
 <template>
-  <div class="nft-conveyor" v-if="isConnected && (warpBoisCount > 0 || tacCount > 0)">
+  <div 
+    class="nft-conveyor"
+    v-if="isConnected && (warpBoisCount > 0 || tacCount > 0)"
+  >
+    <pre class="debug-info" style="position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.8); color: #42b983; padding: 10px; font-size: 12px;">
+      Connected: {{ isConnected }}
+      Warp Bois: {{ warpBoisCount }}
+      TAC: {{ tacCount }}
+      NFTs Length: {{ nftList.length }}
+    </pre>
+
     <div class="conveyor-title">
       <span class="title-text">Your NFTs:</span>
     </div>
@@ -11,7 +21,6 @@
             <span class="nft-name">{{ nft.name }}</span>
           </div>
         </div>
-        <!-- Duplicate for seamless loop -->
         <div class="nft-row">
           <div v-for="nft in nftList" :key="'dup-'+nft.id" class="nft-item">
             <img :src="nft.image" :alt="nft.name">
@@ -24,7 +33,6 @@
 </template>
 
 <script>
-import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.VUE_APP_SUPABASE_URL
 const supabaseAnonKey = process.env.VUE_APP_SUPABASE_ANON_KEY
@@ -35,11 +43,6 @@ console.log('Supabase Key:', supabaseAnonKey ? 'exists' : 'missing')
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables')
 }
-
-const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-)
 
 export default {
   name: 'NftConveyor',
@@ -54,43 +57,64 @@ export default {
       nftList: []
     }
   },
-  watch: {
-    walletAddress: {
-      immediate: true,
-      handler: 'fetchNFTs'
-    }
+  created() {
+    console.log('NftConveyor created with props:', {
+      isConnected: this.isConnected,
+      walletAddress: this.walletAddress,
+      warpBoisCount: this.warpBoisCount,
+      tacCount: this.tacCount
+    })
+  },
+  mounted() {
+    console.log('NftConveyor mounted')
+    this.logVisibilityState()
   },
   methods: {
+    logVisibilityState() {
+      console.log('Visibility check:', {
+        isConnected: this.isConnected,
+        warpBoisCount: this.warpBoisCount,
+        tacCount: this.tacCount,
+        shouldShow: this.isConnected && (this.warpBoisCount > 0 || this.tacCount > 0),
+        nftListLength: this.nftList.length
+      })
+    },
     async fetchNFTs() {
+      console.log('Attempting to fetch NFTs for address:', this.walletAddress)
       if (this.walletAddress) {
         try {
           const response = await fetch(`https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true&include_bids=true`);
           const data = await response.json();
           
           if (data.nfts) {
+            console.log('Fetched NFTs:', data.nfts)
             this.nftList = data.nfts;
           }
         } catch (error) {
           console.error('Error fetching NFTs:', error);
         }
       }
-    },
-    async storeConnection(seiAddress, evmAddress) {
-      try {
-        const { data, error } = await supabase
-          .from('wallet_connections')
-          .insert([
-            { 
-              sei_address: seiAddress,
-              evm_address: evmAddress
-            }
-          ])
-        
-        if (error) throw error
-        console.log('Connection stored:', data)
-      } catch (error) {
-        console.error('Error storing connection:', error)
+    }
+  },
+  watch: {
+    walletAddress: {
+      immediate: true,
+      handler(newVal) {
+        console.log('Wallet address changed:', newVal)
+        this.fetchNFTs()
       }
+    },
+    isConnected(newVal) {
+      console.log('Connection state changed:', newVal)
+      this.logVisibilityState()
+    },
+    warpBoisCount(newVal) {
+      console.log('Warp Bois count changed:', newVal)
+      this.logVisibilityState()
+    },
+    tacCount(newVal) {
+      console.log('TAC count changed:', newVal)
+      this.logVisibilityState()
     }
   }
 }
@@ -99,14 +123,15 @@ export default {
 <style scoped>
 .nft-conveyor {
   position: fixed;
-  bottom: 60px;
+  top: 0;
   left: 0;
   width: 100%;
   height: 80px;
-  background: rgba(28, 28, 28, 0.9);
+  background: rgba(28, 28, 28, 0.95);
   overflow: hidden;
-  z-index: 100;
+  z-index: 999;
   display: flex;
+  border-bottom: 1px solid rgba(66, 185, 131, 0.3);
 }
 
 .conveyor-title {
@@ -172,5 +197,12 @@ export default {
   100% {
     transform: translateX(-50%);
   }
+}
+
+.debug-info {
+  z-index: 1000;
+  font-family: monospace;
+  white-space: pre;
+  margin: 0;
 }
 </style> 
