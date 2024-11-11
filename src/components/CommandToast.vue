@@ -35,7 +35,7 @@
           :alt="activeWarpBoi.name"
           class="warp-boi-avatar"
         />
-        <div class="greeting-text">{{ generateGreeting() }}</div>
+        <div class="greeting-text">{{ currentGreeting }}</div>
       </div>
       
       <div class="command-line">
@@ -86,7 +86,8 @@ export default {
       position: { x: 20, y: 20 },
       command: '',
       commandLogs: [],
-      activeWarpBoi: null
+      activeWarpBoi: null,
+      forceGreetingUpdate: Date.now()
     }
   },
   watch: {
@@ -118,6 +119,20 @@ export default {
         }
       },
       immediate: true
+    },
+    '$route'(to, from) {
+      if (this.activeWarpBoi && to.path !== from.path) {
+        // Just log the navigation command
+        this.commandLogs.push({
+          command: `navigate ${to.path}`,
+          response: `Navigating to ${to.path}...`
+        })
+        
+        // Force a refresh of the greeting text by triggering a reactive update
+        this.$nextTick(() => {
+          this.forceGreetingUpdate = Date.now()
+        })
+      }
     }
   },
   created() {
@@ -161,22 +176,64 @@ export default {
         return acc
       }, {})
 
-      let greeting = `Greetings, I am ${traits.name || `Warp Boi #${this.activeWarpBoi.id}`}, your ${traits.rank} terminal operator. `
+      const currentRoute = this.$route.path
+      let greeting = ''
 
-      if (traits.eyes === 'wat') {
-        greeting += "I'm a bit confused by all this technology... "
+      // Initial greeting only on home page
+      if (currentRoute === '/') {
+        greeting = `Greetings, I am ${traits.name || `Warp Boi #${this.activeWarpBoi.id}`}, your ${traits.rank} terminal operator.`
+        
+        // Add trait-specific comments only on home
+        if (traits.eyes === 'wat') {
+          greeting += " I'm a bit confused by all this technology..."
+        }
+        if (traits.mouth === 'thinking') {
+          greeting += " Let me ponder your requests carefully."
+        }
+        if (traits.uniform === 'section 420') {
+          greeting += " Don't mind the smoke, it helps me process commands better."
+        }
+        if (traits.left_hand === 'neuralizer') {
+          greeting += " Just don't look directly at this device in my hand..."
+        }
+        if (traits.right_hand === 'red lightsaber') {
+          greeting += " And yes, I am authorized to carry this weapon."
+        }
+        
+        return greeting
       }
-      if (traits.mouth === 'thinking') {
-        greeting += "Let me ponder your requests carefully. "
-      }
-      if (traits.uniform === 'section 420') {
-        greeting += "Don't mind the smoke, it helps me process commands better. "
-      }
-      if (traits.left_hand === 'neuralizer') {
-        greeting += "Just don't look directly at this device in my hand... "
-      }
-      if (traits.right_hand === 'red lightsaber') {
-        greeting += "And yes, I am authorized to carry this weapon. "
+
+      // Page-specific messages only
+      switch (currentRoute) {
+        case '/nft':
+          greeting = "Ooh, there's some lovely JPGs (and GIFs) in here! Let me analyze those pixels for you."
+          break
+        case '/portfolio':
+          greeting = traits.rank === 'financial advisor' 
+            ? "As your financial advisor, I must remind you this is not financial advice! But these numbers look interesting..."
+            : "Let's see how your investments are performing today."
+          break
+        case '/coins':
+          greeting = traits.eyes === 'wat'
+            ? "These charts are making me dizzy... but I think that green line means good things!"
+            : "Numbers go up, numbers go down... but mostly up, right??"
+          break
+        case '/trends':
+          greeting = traits.mouth === 'thinking'
+            ? "Hmm, these patterns are quite interesting... I'm seeing a definite trend towards more trends."
+            : "Let me consult my crystal ball- I mean, advanced market analysis tools."
+          break
+        case '/profile':
+          greeting = "Your command center! Here is where you can add and remove wallets for analysis. And soon from multiple chains!"
+          break
+        case '/guide':
+          greeting = traits.uniform === 'section 420'
+            ? "I've got all the manuals right here! Though I might have used some pages for... alternative purposes."
+            : "Need help? I've got all the documentation ready for your perusal!"
+          break
+        case '/about':
+          greeting = "Want to know more about our secret- I mean, special operations?"
+          break
       }
 
       return greeting
@@ -380,6 +437,12 @@ export default {
     truncateAddress(address) {
       if (!address) return ''
       return `${address.slice(0, 6)}...${address.slice(-4)}`
+    }
+  },
+  computed: {
+    currentGreeting() {
+      // Add forceGreetingUpdate as a dependency to ensure updates
+      return this.forceGreetingUpdate && this.generateGreeting()
     }
   }
 }
