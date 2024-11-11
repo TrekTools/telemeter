@@ -82,7 +82,32 @@ export default {
       searchQuery: '',
       chartOptions: {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: {
+              color: '#ffffff'
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          },
+          y: {
+            ticks: {
+              color: '#ffffff'
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: '#ffffff'
+            }
+          }
+        }
       }
     }
   },
@@ -119,7 +144,7 @@ export default {
           groupedData[item.symbol] = {
             labels: [],
             datasets: [{
-              label: `${item.symbol} Price`,
+              label: `Price in $SEI`,
               data: [],
               borderColor: '#42b883',
               tension: 0.4
