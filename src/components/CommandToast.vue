@@ -6,14 +6,6 @@
     :style="{ left: position.x + 'px', top: position.y + 'px' }"
     @mousedown="startDrag"
   >
-    <pre style="color: white; font-size: 12px; padding: 10px;">
-      Wallet Connected: {{ walletConnected }}
-      Has Warp Boi: {{ !!activeWarpBoi }}
-      Warp Boi ID: {{ activeWarpBoi?.id }}
-      Warp Boi Image: {{ activeWarpBoi?.image }}
-      Warp Boi Name: {{ activeWarpBoi?.name }}
-    </pre>
-
     <div class="toast-header">
       <div class="drag-handle">
         <span class="terminal-buttons">
@@ -83,7 +75,7 @@ export default {
       isOpen: true,
       hidden: false,
       isMinimized: false,
-      position: { x: 20, y: 20 },
+      position: { x: window.innerWidth - 420, y: 20 },
       command: '',
       commandLogs: [],
       activeWarpBoi: null,
@@ -672,6 +664,8 @@ export default {
     },
     hide() {
       this.hidden = true
+      // Emit event to parent to show green indicator in toolbar
+      this.$emit('terminal-hidden', true)
     },
     toggleToast() {
       this.isOpen = !this.isOpen
