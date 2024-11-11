@@ -29,7 +29,7 @@
 
     <button 
       @click="handleWalletAction" 
-      class="connect-button"
+      :class="['connect-button', walletConnected ? 'disconnect' : 'connect']"
     >
       {{ walletConnected ? 'disconnect' : 'connect wallet' }}
     </button>
@@ -87,8 +87,14 @@ export default {
     },
     walletAddress: String,
     evmAddress: String,
-    warpBoisCount: Number,
-    tacCount: Number,
+    warpBoisCount: {
+      type: Number,
+      default: 0
+    },
+    tacCount: {
+      type: Number,
+      default: 0
+    },
     nftStatus: String
   },
   emits: ['connect-wallet', 'disconnect-wallet'],
@@ -135,7 +141,6 @@ export default {
 }
 
 .connect-button {
-  background-color: v-bind(walletConnected ? '#ff4444' : '#42b983');
   color: white;
   border: none;
   padding: 10px 20px;
@@ -146,7 +151,125 @@ export default {
   transition: all 0.3s ease;
 }
 
-.connect-button:hover {
-  background-color: v-bind(walletConnected ? '#ff6666' : '#3aa876');
+.connect-button.connect {
+  background-color: #42b983;
+}
+
+.connect-button.disconnect {
+  background-color: #ff4444;
+}
+
+.connect-button.connect:hover {
+  background-color: #3aa876;
+}
+
+.connect-button.disconnect:hover {
+  background-color: #ff6666;
+}
+
+.wallet-address {
+  font-family: 'Source Code Pro', monospace;
+  color: #42b983;
+  margin: 5px 0;
+}
+
+.nft-status {
+  color: #fff;
+  margin: 10px 0;
+}
+
+.nft-count {
+  background: #42b983;
+  color: #1a1a1a;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-size: 0.9em;
+}
+
+.terminal-header {
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.terminal-bar {
+  background: #2c2c2c;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.terminal-buttons {
+  display: flex;
+  gap: 6px;
+  margin-right: 12px;
+}
+
+.terminal-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.red { background: #ff5f56; }
+.yellow { background: #ffbd2e; }
+.green { background: #27c93f; }
+
+.terminal-title {
+  color: #666;
+  font-family: 'Source Code Pro', monospace;
+}
+
+.terminal-content {
+  padding: 16px;
+  font-family: 'Source Code Pro', monospace;
+  color: #fff;
+}
+
+.prompt {
+  color: #42b983;
+  margin-right: 8px;
+}
+
+.command {
+  color: #fff;
+}
+
+.response {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.redacted {
+  background: #666;
+  color: #666;
+}
+
+.highlight {
+  color: #42b983;
+}
+
+.warning {
+  color: #ffbd2e;
+}
+
+.requirement {
+  display: inline-block;
+  background: rgba(66, 185, 131, 0.1);
+  color: #42b983;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 4px;
+}
+
+.cursor {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
 }
 </style> 

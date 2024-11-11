@@ -1,7 +1,7 @@
 <template>
   <div class="charts-container">
     <div class="chart-wrapper">
-      <h3>Warp Bois Floor</h3>
+      <h3>Warp Bois</h3>
       <div class="chart">
         <Line 
           v-if="chartData.warpFloor" 
@@ -11,7 +11,7 @@
       </div>
     </div>
     <div class="chart-wrapper">
-      <h3>TAC Floor</h3>
+      <h3>TAC</h3>
       <div class="chart">
         <Line 
           v-if="chartData.tacFloor" 

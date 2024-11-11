@@ -6,6 +6,14 @@
     :style="{ left: position.x + 'px', top: position.y + 'px' }"
     @mousedown="startDrag"
   >
+    <pre style="color: white; font-size: 12px; padding: 10px;">
+      Wallet Connected: {{ walletConnected }}
+      Has Warp Boi: {{ !!activeWarpBoi }}
+      Warp Boi ID: {{ activeWarpBoi?.id }}
+      Warp Boi Image: {{ activeWarpBoi?.image }}
+      Warp Boi Name: {{ activeWarpBoi?.name }}
+    </pre>
+
     <div class="toast-header">
       <div class="drag-handle">
         <span class="terminal-buttons">
@@ -13,334 +21,430 @@
           <span class="terminal-circle yellow" @click.stop="minimize"></span>
           <span class="terminal-circle green" @click.stop="toggleToast"></span>
         </span>
-        <span class="terminal-title">{{ warpBoi ? getWarpBoiName : 'Telemeter Terminal' }}</span>
+        <span class="terminal-title">
+          Telemeter Terminal 
+          <span v-if="activeWarpBoi" class="warp-boi-id">#{{ activeWarpBoi?.id }}</span>
+        </span>
       </div>
     </div>
-    <div class="toast-content" v-if="isOpen">
-      <div class="terminal-interface">
-        <!-- Warp Boi Info Section -->
-        <div v-if="warpBoi" class="warpboi-info">
-          <img :src="warpBoi.image" alt="Warp Boi" class="warpboi-avatar">
-          <div class="warpboi-details">
-            <h3>{{ getWarpBoiName }}</h3>
-            <p>Rank: {{ getWarpBoiRank }}</p>
-          </div>
-        </div>
-        
-        <!-- Command Input -->
-        <div class="command-line">
-          <span class="prompt">$</span>
-          <input 
-            type="text" 
-            v-model="command" 
-            @keyup.enter="executeCommand"
-            placeholder="Enter command (try 'help')"
-            ref="commandInput"
-          >
-        </div>
-        
-        <!-- Command History -->
-        <div class="command-history">
-          <!-- Warp Boi Welcome Message -->
-          <div v-if="warpBoi" class="log-entry warpboi-message">
-            <span class="response-text">
-              Greetings, commander! I'm {{ getWarpBoiName }}, your personal assistant. 
-              I'm equipped with a {{ getWarpBoiRightHand }} and a {{ getWarpBoiLeftHand }}. 
-              How may I assist you today?
-            </span>
-          </div>
-          
-          <!-- Command Logs -->
-          <div v-for="(log, index) in commandLogs" :key="index" class="log-entry">
-            <span class="prompt">$</span>
-            <span class="command-text">{{ log.command }}</span>
-            <span class="response-text">{{ log.response }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Dock Icon -->
-  <div 
-    v-show="isMinimized || hidden"
-    class="dock-icon"
-    @click="restore"
-  >
-    <template v-if="warpBoi">
-      <img :src="warpBoi.image" class="dock-avatar" alt="Warp Boi">
-      {{ getWarpBoiName }}
-    </template>
-    <template v-else>
-      <span class="terminal-circle green"></span>
-      Terminal
-    </template>
+    <div class="toast-content" v-if="isOpen">
+      <div v-if="walletConnected &&  activeWarpBoi" class="warp-boi-greeting">
+        <img 
+          :src="activeWarpBoi.image" 
+          :alt="activeWarpBoi.name"
+          class="warp-boi-avatar"
+        />
+        <div class="greeting-text">{{ generateGreeting() }}</div>
+      </div>
+      
+      <div class="command-line">
+        <span class="prompt">$</span>
+        <input 
+          type="text" 
+          v-model="command" 
+          @keyup.enter="executeCommand"
+          placeholder="Enter command (try 'help')"
+          ref="commandInput"
+        >
+      </div>
+      <div class="command-history">
+        <div v-for="(log, index) in commandLogs" :key="index" class="log-entry">
+          <div class="command">$ {{ log.command }}</div>
+          <div class="response">{{ log.response }}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
   name: 'CommandToast',
+  emits: ['connect-wallet', 'disconnect-wallet'],
   props: {
     walletConnected: {
       type: Boolean,
       default: false
     },
-    warpBoi: {
-      type: Object,
-      default: null
+    walletAddress: String,
+    evmAddress: String,
+    warpBoisCount: {
+      type: Number,
+      default: 0
     },
-    walletAddress: {
-      type: String,
-      default: ''
-    },
-    evmAddress: {
-      type: String,
-      default: ''
+    tacCount: {
+      type: Number,
+      default: 0
     }
   },
-  emits: ['connect-wallet', 'disconnect-wallet', 'change-nft-view'],
   data() {
     return {
       isOpen: true,
-      isMinimized: false,
       hidden: false,
+      isMinimized: false,
+      position: { x: 20, y: 20 },
       command: '',
       commandLogs: [],
-      position: {
-        x: window.innerWidth - 420,
-        y: window.innerHeight - 400
-      },
-      isDragging: false,
-      dragOffset: { x: 0, y: 0 },
-      commands: {
-        help: 'Available commands: connect, disconnect, profile, nft, portfolio, coins, trends, about, guide, nft-gw, nft-gc, clear',
-        profile: '/profile',
-        nft: '/nft',
-        portfolio: '/portfolio',
-        coins: '/coins',
-        trends: '/trends',
-        about: '/about',
-        guide: '/guide',
-        clear: 'clear',
-        connect: 'connect',
-        disconnect: 'disconnect',
-        home: '/',
-        'nft-gw': 'nft-group-wallet',
-        'nft-gc': 'nft-group-collection'
-      }
+      activeWarpBoi: null
     }
   },
-  mounted() {
-    window.addEventListener('mousemove', this.onDrag)
-    window.addEventListener('mouseup', this.stopDrag)
+  watch: {
+    walletConnected: {
+      handler(newVal) {
+        console.log('CommandToast: Wallet connection changed:', newVal)
+      },
+      immediate: true
+    },
+    warpBoisCount: {
+      handler(newCount) {
+        console.log('CommandToast: WarpBoisCount changed to:', newCount)
+        if (newCount > 0 && !this.activeWarpBoi) {
+          console.log('CommandToast: Triggering Warp Boi fetch...')
+          this.fetchWarpBoiData()
+        } else if (newCount === 0) {
+          console.log('CommandToast: Clearing active Warp Boi')
+          this.activeWarpBoi = null
+        }
+      },
+      immediate: true
+    }
   },
-  beforeUnmount() {
-    window.removeEventListener('mousemove', this.onDrag)
-    window.removeEventListener('mouseup', this.stopDrag)
+  created() {
+    console.log('CommandToast created with props:', {
+      walletConnected: this.walletConnected,
+      warpBoisCount: this.warpBoisCount,
+      walletAddress: this.walletAddress
+    })
   },
   methods: {
-    startDrag(e) {
-      if (e.target.closest('.terminal-buttons')) return
-      this.isDragging = true
-      this.dragOffset = {
-        x: e.clientX - this.position.x,
-        y: e.clientY - this.position.y
+    async fetchWarpBoiData() {
+      console.log('CommandToast: Starting Warp Boi fetch...')
+      try {
+        const response = await fetch(`https://api.pallet.exchange/api/v2/nfts/sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm/tokens/1887`)
+        console.log('CommandToast: Fetch response received:', response.status)
+        const data = await response.json()
+        console.log('CommandToast: Raw data:', data)
+        
+        if (data.tokens && data.tokens[0]) {
+          this.activeWarpBoi = data.tokens[0]
+          console.log('CommandToast: Active Warp Boi set:', this.activeWarpBoi)
+          
+          const traits = this.activeWarpBoi.traits.reduce((acc, trait) => {
+            acc[trait.type] = trait.value
+            return acc
+          }, {})
+          
+          console.log('CommandToast: Processed traits:', traits)
+        } else {
+          console.error('CommandToast: No tokens found in response')
+        }
+      } catch (error) {
+        console.error('CommandToast: Error fetching Warp Boi:', error)
       }
     },
-    onDrag(e) {
-      if (!this.isDragging) return
+    generateGreeting() {
+      if (!this.activeWarpBoi) return ''
       
-      const maxX = window.innerWidth - 400
-      const maxY = window.innerHeight - 300
-      
-      this.position = {
-        x: Math.min(Math.max(0, e.clientX - this.dragOffset.x), maxX),
-        y: Math.min(Math.max(0, e.clientY - this.dragOffset.y), maxY)
+      const traits = this.activeWarpBoi.traits.reduce((acc, trait) => {
+        acc[trait.type] = trait.value
+        return acc
+      }, {})
+
+      let greeting = `Greetings, I am ${traits.name || `Warp Boi #${this.activeWarpBoi.id}`}, your ${traits.rank} terminal operator. `
+
+      if (traits.eyes === 'wat') {
+        greeting += "I'm a bit confused by all this technology... "
       }
+      if (traits.mouth === 'thinking') {
+        greeting += "Let me ponder your requests carefully. "
+      }
+      if (traits.uniform === 'section 420') {
+        greeting += "Don't mind the smoke, it helps me process commands better. "
+      }
+      if (traits.left_hand === 'neuralizer') {
+        greeting += "Just don't look directly at this device in my hand... "
+      }
+      if (traits.right_hand === 'red lightsaber') {
+        greeting += "And yes, I am authorized to carry this weapon. "
+      }
+
+      return greeting
     },
-    stopDrag() {
-      this.isDragging = false
+    executeCommand() {
+      if (!this.command.trim()) return
+
+      console.log('CommandToast: Executing command:', this.command)
+
+      let response = ''
+      const cmd = this.command.toLowerCase().trim()
+
+      const navigateProtected = (path, pageName) => {
+        if (this.checkNFTAccess()) {
+          this.$router.push(path)
+          response = `Navigating to ${pageName}...`
+        } else {
+          response = 'Access denied: Requires Warp Boi or TAC NFT'
+          console.log('CommandToast: Access denied for protected route:', path)
+          this.$router.push('/')
+        }
+      }
+
+      switch (cmd) {
+        case 'help':
+          response = `Available commands:
+          help - Show this help message
+          clear - Clear command history
+          status - Show connection status
+          info - Show Warp Boi info
+          connect - Connect wallet
+          disconnect - Disconnect wallet
+          minimize - Minimize terminal
+          hide - Hide terminal
+          
+          Navigation:
+          home - Go to home page
+          about - Go to about page
+          guide - Go to guide page
+          portfolio - Go to portfolio (requires NFT)
+          coins - Go to coins page (requires NFT)
+          nft - Go to NFT analysis (requires NFT)
+          trends - Go to market trends (requires NFT)
+          profile - Go to profile (requires NFT)`
+          break
+
+        case 'connect':
+          if (!this.walletConnected) {
+            this.$emit('connect-wallet')
+            response = 'Connecting wallet...'
+          } else {
+            response = 'Wallet already connected'
+          }
+          break
+
+        case 'disconnect':
+          if (this.walletConnected) {
+            this.$emit('disconnect-wallet')
+            response = 'Disconnecting wallet...'
+          } else {
+            response = 'Wallet not connected'
+          }
+          break
+
+        // Navigation commands
+        case 'home':
+          this.$router.push('/')
+          response = 'Navigating to home page...'
+          break
+
+        case 'about':
+          this.$router.push('/about')
+          response = 'Navigating to about page...'
+          break
+
+        case 'guide':
+          this.$router.push('/guide')
+          response = 'Navigating to guide page...'
+          break
+
+        case 'portfolio':
+          navigateProtected('/portfolio', 'portfolio page')
+          break
+
+        case 'coins':
+          navigateProtected('/coins', 'coins page')
+          break
+
+        case 'nft':
+          navigateProtected('/nft', 'NFT analysis page')
+          break
+
+        case 'trends':
+          navigateProtected('/trends', 'market trends page')
+          break
+
+        case 'profile':
+          navigateProtected('/profile', 'profile page')
+          break
+
+        case 'clear':
+          this.commandLogs = []
+          return
+
+        case 'status':
+          response = `Wallet Connected: ${this.walletConnected}
+          SEI Address: ${this.walletAddress || 'Not connected'}
+          EVM Address: ${this.evmAddress || 'Not connected'}
+          Warp Bois: ${this.warpBoisCount}
+          TAC NFTs: ${this.tacCount}`
+          break
+
+        case 'info':
+          if (this.activeWarpBoi) {
+            const traits = this.activeWarpBoi.traits.reduce((acc, trait) => {
+              acc[trait.type] = trait.value
+              return acc
+            }, {})
+            response = `Warp Boi #${this.activeWarpBoi.id}
+            Name: ${traits.name || 'Unknown'}
+            Rank: ${traits.rank || 'Unknown'}
+            Eyes: ${traits.eyes || 'Unknown'}
+            Mouth: ${traits.mouth || 'Unknown'}
+            Uniform: ${traits.uniform || 'Unknown'}
+            Left Hand: ${traits.left_hand || 'Unknown'}
+            Right Hand: ${traits.right_hand || 'Unknown'}`
+          } else {
+            response = 'No Warp Boi detected'
+          }
+          break
+
+        case 'minimize':
+          this.minimize()
+          response = 'Terminal minimized'
+          break
+
+        case 'hide':
+          this.hide()
+          response = 'Terminal hidden'
+          break
+
+        default:
+          response = `Command not recognized: ${this.command}. Type 'help' for available commands.`
+      }
+
+      this.commandLogs.push({
+        command: this.command,
+        response: response
+      })
+
+      this.command = ''
+      
+      // Scroll to bottom of command history
+      this.$nextTick(() => {
+        const history = this.$el.querySelector('.command-history')
+        if (history) {
+          history.scrollTop = history.scrollHeight
+        }
+      })
     },
     minimize() {
-      this.isMinimized = true
-      this.isOpen = false
+      this.isMinimized = !this.isMinimized
     },
     hide() {
       this.hidden = true
-      this.isMinimized = false
-      this.isOpen = false
-    },
-    restore() {
-      this.isMinimized = false
-      this.hidden = false
-      this.isOpen = true
     },
     toggleToast() {
-      if (!this.isMinimized) {
-        this.isOpen = !this.isOpen
-        if (this.isOpen) {
-          this.$nextTick(() => {
-            this.$refs.commandInput?.focus()
-          })
-        }
-      }
+      this.isOpen = !this.isOpen
     },
-    executeCommand() {
-      const cmd = this.command.toLowerCase().trim()
-      let response = 'Command not found. Type "help" for available commands.'
-      
-      if (cmd === 'clear') {
-        this.commandLogs = []
-        this.command = ''
-        return
+    startDrag(event) {
+      if (!event.target.classList.contains('drag-handle') && 
+          !event.target.closest('.drag-handle')) return
+
+      const startX = event.clientX - this.position.x
+      const startY = event.clientY - this.position.y
+
+      const drag = (e) => {
+        this.position = {
+          x: e.clientX - startX,
+          y: e.clientY - startY
+        }
       }
 
-      if (cmd === 'nft-gw' || cmd === 'nft-gc') {
-        const mode = cmd === 'nft-gw' ? 'wallet' : 'collection'
-        
-        if (this.$route.path !== '/nft') {
-          this.$router.push('/nft').then(() => {
-            this.$nextTick(() => {
-              this.$emit('change-nft-view', mode)
-            })
-          })
-        } else {
-          this.$emit('change-nft-view', mode)
-        }
-        
-        response = `Switched to Group by ${mode === 'wallet' ? 'Wallet' : 'Collection'} view`
-      } else if (cmd === 'connect') {
-        if (this.walletConnected) {
-          response = 'Wallet is already connected!'
-        } else {
-          this.$emit('connect-wallet')
-          response = 'Connecting wallet...'
-        }
-      } else if (cmd === 'disconnect') {
-        if (!this.walletConnected) {
-          response = 'No wallet is connected!'
-        } else {
-          this.$emit('disconnect-wallet')
-          response = 'Disconnecting wallet...'
-        }
-      } else if (this.commands[cmd]) {
-        if (typeof this.commands[cmd] === 'string' && this.commands[cmd].startsWith('/')) {
-          this.$router.push(this.commands[cmd])
-          response = `Navigating to ${cmd}...`
-        } else {
-          response = this.commands[cmd]
-        }
+      const stopDrag = () => {
+        document.removeEventListener('mousemove', drag)
+        document.removeEventListener('mouseup', stopDrag)
       }
-      
-      this.commandLogs.push({
-        command: cmd,
-        response: response
+
+      document.addEventListener('mousemove', drag)
+      document.addEventListener('mouseup', stopDrag)
+    },
+    checkNFTAccess() {
+      const hasRequiredNFT = this.warpBoisCount > 0 || this.tacCount > 0
+      console.log('CommandToast: Access Check:', {
+        warpBoisCount: this.warpBoisCount,
+        tacCount: this.tacCount,
+        hasAccess: hasRequiredNFT
       })
-      
-      this.command = ''
-    }
-  },
-  computed: {
-    getWarpBoiName() {
-      return this.warpBoi?.traits.find(t => t.type === 'name')?.value || this.warpBoi?.name
-    },
-    getWarpBoiRank() {
-      return this.warpBoi?.traits.find(t => t.type === 'rank')?.value
-    },
-    getWarpBoiRightHand() {
-      return this.warpBoi?.traits.find(t => t.type === 'right_hand')?.value
-    },
-    getWarpBoiLeftHand() {
-      return this.warpBoi?.traits.find(t => t.type === 'left_hand')?.value
+      return hasRequiredNFT
     }
   }
 }
 </script>
 
 <style scoped>
-.command-toast {
-  position: fixed;
-  width: 400px;
-  background-color: #1a1a1a;
+.warp-boi-greeting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(66, 185, 131, 0.1);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  overflow: hidden;
-  resize: both;
-  transition: all 0.3s ease;
+  margin-bottom: 12px;
 }
 
-.minimized {
-  display: none;
-}
-
-.drag-handle {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  cursor: move;
-  user-select: none;
-}
-
-.dock-icon {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #2c2c2c;
-  padding: 8px 16px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  z-index: 1000;
-  transition: transform 0.2s ease;
-}
-
-.dock-icon:hover {
-  transform: translateY(-2px);
-}
-
-.toast-header {
-  background-color: #2c2c2c;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-}
-
-.warpboi-info {
-  display: flex;
-  padding: 15px;
-  background-color: #2c2c2c;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #3a3a3a;
-}
-
-.warpboi-avatar {
-  width: 60px;
-  height: 60px;
+.warp-boi-avatar {
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  object-fit: cover;
+  border: 2px solid #42b983;
 }
 
-.warpboi-details h3 {
-  margin: 0;
+.greeting-text {
   color: #42b983;
+  font-style: italic;
+  font-size: 0.9em;
+  line-height: 1.4;
 }
 
-.warpboi-details p {
-  margin: 5px 0 0;
-  color: #888;
-}
-
-.warpboi-message {
-  background-color: #2c2c2c;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 10px;
+.warp-boi-id {
   color: #42b983;
+  font-size: 0.9em;
+  margin-left: 8px;
+}
+
+.command-line {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.prompt {
+  color: #42b983;
+  margin-right: 8px;
+  font-family: monospace;
+}
+
+input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: white;
+  font-family: monospace;
+  outline: none;
+}
+
+.command-history {
+  margin-top: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.log-entry {
+  margin-bottom: 8px;
+}
+
+.log-entry .command {
+  color: #42b983;
+  font-family: monospace;
+}
+
+.log-entry .response {
+  color: #fff;
+  white-space: pre-wrap;
+  font-family: monospace;
+  margin-top: 4px;
+  padding-left: 16px;
 }
 </style> 

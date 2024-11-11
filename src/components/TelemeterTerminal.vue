@@ -6,6 +6,14 @@
     :style="{ left: position.x + 'px', top: position.y + 'px' }"
     @mousedown="startDrag"
   >
+    <pre style="color: white; font-size: 12px; padding: 10px;">
+      Wallet Connected: {{ walletConnected }}
+      Has Warp Boi: {{ !!activeWarpBoi }}
+      Warp Boi ID: {{ activeWarpBoi?.id }}
+      Warp Boi Image: {{ activeWarpBoi?.image }}
+      Warp Boi Name: {{ activeWarpBoi?.name }}
+    </pre>
+
     <div class="toast-header">
       <div class="drag-handle">
         <span class="terminal-buttons">
@@ -13,10 +21,23 @@
           <span class="terminal-circle yellow" @click.stop="minimize"></span>
           <span class="terminal-circle green" @click.stop="toggleToast"></span>
         </span>
-        <span class="terminal-title">Telemeter Terminal</span>
+        <span class="terminal-title">
+          Telemeter Terminal 
+          <span v-if="activeWarpBoi" class="warp-boi-id">#{{ activeWarpBoi?.id }}</span>
+        </span>
       </div>
     </div>
+
     <div class="toast-content" v-if="isOpen">
+      <div v-if="walletConnected &&  activeWarpBoi" class="warp-boi-greeting">
+        <img 
+          :src="activeWarpBoi.image" 
+          :alt="activeWarpBoi.name"
+          class="warp-boi-avatar"
+        />
+        <div class="greeting-text">{{ generateGreeting() }}</div>
+      </div>
+      
       <div class="command-line">
         <span class="prompt">$</span>
         <input 
@@ -29,22 +50,11 @@
       </div>
       <div class="command-history">
         <div v-for="(log, index) in commandLogs" :key="index" class="log-entry">
-          <span class="prompt">$</span>
-          <span class="command-text">{{ log.command }}</span>
-          <span class="response-text">{{ log.response }}</span>
+          <div class="command">$ {{ log.command }}</div>
+          <div class="response">{{ log.response }}</div>
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Dock icon when minimized -->
-  <div 
-    v-show="isMinimized || hidden"
-    class="dock-icon"
-    @click="restore"
-  >
-    <span class="terminal-circle green"></span>
-    Terminal
   </div>
 </template>
 
@@ -56,204 +66,138 @@ export default {
       type: Boolean,
       default: false
     },
+    walletAddress: String,
+    evmAddress: String,
     warpBoisCount: {
       type: Number,
       default: 0
-    },
-    tacCount: {
-      type: Number,
-      default: 0
     }
   },
-  emits: ['connect-wallet', 'disconnect-wallet'],
   data() {
     return {
       isOpen: true,
-      isMinimized: false,
       hidden: false,
+      isMinimized: false,
+      position: { x: 20, y: 20 },
       command: '',
       commandLogs: [],
-      position: {
-        x: window.innerWidth - 420,
-        y: window.innerHeight - 400
-      },
-      isDragging: false,
-      dragOffset: { x: 0, y: 0 },
-      commands: {
-        help: 'Available commands: connect, disconnect, profile, nft, portfolio, coins, trends, about, guide, clear',
-        profile: '/profile',
-        nft: '/nft',
-        portfolio: '/portfolio',
-        coins: '/coins',
-        trends: '/trends',
-        about: '/about',
-        guide: '/guide',
-        clear: 'clear',
-        connect: 'connect',
-        disconnect: 'disconnect'
-      }
+      activeWarpBoi: null
     }
   },
-  mounted() {
-    window.addEventListener('mousemove', this.onDrag)
-    window.addEventListener('mouseup', this.stopDrag)
+  watch: {
+    walletConnected: {
+      handler(newVal) {
+        console.log('TelemeterTerminal: Wallet connection changed:', newVal)
+      },
+      immediate: true
+    },
+    warpBoisCount: {
+      handler(newCount) {
+        console.log('TelemeterTerminal: WarpBoisCount changed to:', newCount)
+        if (newCount > 0 && !this.activeWarpBoi) {
+          console.log('TelemeterTerminal: Triggering Warp Boi fetch...')
+          this.fetchWarpBoiData()
+        } else if (newCount === 0) {
+          console.log('TelemeterTerminal: Clearing active Warp Boi')
+          this.activeWarpBoi = null
+        }
+      },
+      immediate: true
+    }
   },
-  beforeUnmount() {
-    window.removeEventListener('mousemove', this.onDrag)
-    window.removeEventListener('mouseup', this.stopDrag)
+  created() {
+    console.log('TelemeterTerminal created with props:', {
+      walletConnected: this.walletConnected,
+      warpBoisCount: this.warpBoisCount,
+      walletAddress: this.walletAddress
+    })
   },
   methods: {
-    startDrag(e) {
-      if (e.target.closest('.terminal-buttons')) return
-      this.isDragging = true
-      this.dragOffset = {
-        x: e.clientX - this.position.x,
-        y: e.clientY - this.position.y
-      }
-    },
-    onDrag(e) {
-      if (!this.isDragging) return
-      
-      const maxX = window.innerWidth - 400
-      const maxY = window.innerHeight - 300
-      
-      this.position = {
-        x: Math.min(Math.max(0, e.clientX - this.dragOffset.x), maxX),
-        y: Math.min(Math.max(0, e.clientY - this.dragOffset.y), maxY)
-      }
-    },
-    stopDrag() {
-      this.isDragging = false
-    },
-    minimize() {
-      this.isMinimized = true
-      this.isOpen = false
-    },
-    hide() {
-      this.hidden = true
-      this.isMinimized = false
-      this.isOpen = false
-    },
-    restore() {
-      this.isMinimized = false
-      this.hidden = false
-      this.isOpen = true
-    },
-    toggleToast() {
-      if (!this.isMinimized) {
-        this.isOpen = !this.isOpen
-        if (this.isOpen) {
-          this.$nextTick(() => {
-            this.$refs.commandInput?.focus()
-          })
+    async fetchWarpBoiData() {
+      console.log('TelemeterTerminal: Starting Warp Boi fetch...')
+      try {
+        const response = await fetch(`https://api.pallet.exchange/api/v2/nfts/sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm/tokens/1887`)
+        console.log('TelemeterTerminal: Fetch response received:', response.status)
+        const data = await response.json()
+        console.log('TelemeterTerminal: Raw data:', data)
+        
+        if (data.tokens && data.tokens[0]) {
+          this.activeWarpBoi = data.tokens[0]
+          console.log('TelemeterTerminal: Active Warp Boi set:', this.activeWarpBoi)
+          
+          const traits = this.activeWarpBoi.traits.reduce((acc, trait) => {
+            acc[trait.type] = trait.value
+            return acc
+          }, {})
+          
+          console.log('TelemeterTerminal: Processed traits:', traits)
+        } else {
+          console.error('TelemeterTerminal: No tokens found in response')
         }
+      } catch (error) {
+        console.error('TelemeterTerminal: Error fetching Warp Boi:', error)
       }
     },
-    executeCommand() {
-      const cmd = this.command.toLowerCase().trim()
-      let response = 'Command not found. Type "help" for available commands.'
+    generateGreeting() {
+      if (!this.activeWarpBoi) return ''
       
-      if (cmd === 'clear') {
-        this.commandLogs = []
-        this.command = ''
-        return
+      const traits = this.activeWarpBoi.traits.reduce((acc, trait) => {
+        acc[trait.type] = trait.value
+        return acc
+      }, {})
+
+      let greeting = `Greetings, I am ${traits.name || `Warp Boi #${this.activeWarpBoi.id}`}, your ${traits.rank} terminal operator. `
+
+      if (traits.eyes === 'wat') {
+        greeting += "I'm a bit confused by all this technology... "
+      }
+      if (traits.mouth === 'thinking') {
+        greeting += "Let me ponder your requests carefully. "
+      }
+      if (traits.uniform === 'section 420') {
+        greeting += "Don't mind the smoke, it helps me process commands better. "
+      }
+      if (traits.left_hand === 'neuralizer') {
+        greeting += "Just don't look directly at this device in my hand... "
+      }
+      if (traits.right_hand === 'red lightsaber') {
+        greeting += "And yes, I am authorized to carry this weapon. "
       }
 
-      // Protected commands that require wallet connection and NFT ownership
-      const protectedCommands = ['nft', 'portfolio', 'coins', 'trends', 'profile']
-      
-      if (protectedCommands.includes(cmd)) {
-        if (!this.walletConnected) {
-          response = 'Please connect your wallet first.'
-        } else if (this.warpBoisCount === 0 && this.tacCount === 0) {
-          response = 'Access denied. You need to own a Warp Boi or TAC NFT to access this feature.'
-        } else if (this.commands[cmd]) {
-          this.$router.push(this.commands[cmd])
-          response = `Navigating to ${cmd}...`
-        }
-      } else if (cmd === 'connect') {
-        if (this.walletConnected) {
-          response = 'Wallet is already connected!'
-        } else {
-          this.$emit('connect-wallet')
-          response = 'Connecting wallet...'
-        }
-      } else if (cmd === 'disconnect') {
-        if (!this.walletConnected) {
-          response = 'No wallet is connected!'
-        } else {
-          this.$emit('disconnect-wallet')
-          response = 'Disconnecting wallet...'
-        }
-      } else if (this.commands[cmd]) {
-        // Non-protected commands (help, about, guide)
-        if (typeof this.commands[cmd] === 'string' && this.commands[cmd].startsWith('/')) {
-          this.$router.push(this.commands[cmd])
-          response = `Navigating to ${cmd}...`
-        } else {
-          response = this.commands[cmd]
-        }
-      }
-      
-      this.commandLogs.push({
-        command: cmd,
-        response: response
-      })
-      
-      this.command = ''
+      return greeting
     }
   }
 }
 </script>
 
 <style scoped>
-.command-toast {
-  position: fixed;
-  width: 400px;
-  background-color: #1a1a1a;
+.warp-boi-greeting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(66, 185, 131, 0.1);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  overflow: hidden;
-  resize: both;
-  transition: all 0.3s ease;
+  margin-bottom: 12px;
 }
 
-.minimized {
-  display: none;
+.warp-boi-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #42b983;
 }
 
-.drag-handle {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  cursor: move;
-  user-select: none;
+.greeting-text {
+  color: #42b983;
+  font-style: italic;
+  font-size: 0.9em;
+  line-height: 1.4;
 }
 
-.dock-icon {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #2c2c2c;
-  padding: 8px 16px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  z-index: 1000;
-  transition: transform 0.2s ease;
-}
-
-.dock-icon:hover {
-  transform: translateY(-2px);
-}
-
-.toast-header {
-  background-color: #2c2c2c;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
+.warp-boi-id {
+  color: #42b983;
+  font-size: 0.9em;
+  margin-left: 8px;
 }
 </style> 

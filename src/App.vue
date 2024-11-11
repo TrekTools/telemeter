@@ -1,20 +1,30 @@
 <template>
   <router-view 
-    :walletConnected="isConnected"
-    :walletAddress="walletAddress"
-    :evmAddress="evmAddress"
-    :warpBoisCount="warpBoisCount"
-    :tacCount="tacCount"
-    :nftStatus="nftStatus"
+    :wallet-connected="isConnected"
+    :wallet-address="walletAddress"
+    :evm-address="evmAddress"
+    :warp-bois-count="warpBoisCount"
+    :tac-count="tacCount"
+    :nft-status="nftStatus"
     @connect-wallet="handleConnect"
     @disconnect-wallet="disconnectWallet"
     @check-nfts="handleNFTCheck"
   ></router-view>
+  
+  <!-- Add CommandToast with all required props -->
+  <CommandToast 
+    :wallet-connected="isConnected"
+    :wallet-address="walletAddress"
+    :evm-address="evmAddress"
+    :warp-bois-count="warpBoisCount"
+    :tac-count="tacCount"
+  />
+
   <NftConveyor 
     :wallet-connected="isConnected"
-    :walletAddress="walletAddress"
-    :warpBoisCount="warpBoisCount"
-    :tacCount="tacCount"
+    :wallet-address="walletAddress"
+    :warp-bois-count="warpBoisCount"
+    :tac-count="tacCount"
   />
   
   <div class="nav-container">
@@ -58,11 +68,7 @@
       </div>
     </nav>
   </div>
-  <CommandToast 
-    :wallet-connected="isConnected"
-    @connect-wallet="handleConnect"
-    @disconnect-wallet="disconnectWallet"
-  />
+  <NftConveyor />
 </template>
 
 <script>
@@ -87,7 +93,8 @@ export default {
       nftStatus: null,
       warpTokenCount: 0,
       isDrawerOpen: false,
-      isMobile: false
+      isMobile: false,
+      activeWarpBoi: null
     }
   },
   created() {
@@ -96,6 +103,22 @@ export default {
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.checkMobile)
+  },
+  watch: {
+    async warpBoisCount(newCount) {
+      if (newCount > 0 && !this.activeWarpBoi) {
+        try {
+          const response = await fetch(`https://api.pallet.exchange/api/v2/nfts/sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm/tokens/1887`)
+          const data = await response.json()
+          this.activeWarpBoi = data.tokens[0]
+          console.log('Fetched Warp Boi:', this.activeWarpBoi)
+        } catch (error) {
+          console.error('Error fetching Warp Boi:', error)
+        }
+      } else if (newCount === 0) {
+        this.activeWarpBoi = null
+      }
+    }
   },
   methods: {
     async handleConnect() {
@@ -490,5 +513,12 @@ body {
   .toolbar {
     display: none;
   }
+}
+
+/* Add any necessary styles for the floating toast */
+.command-toast {
+  position: fixed;
+  z-index: 1000;
+  /* Initial position is set in the component */
 }
 </style>
