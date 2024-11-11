@@ -57,10 +57,10 @@ export default {
       default: false
     }
   },
-  emits: ['connect-wallet', 'disconnect-wallet'],
+  emits: ['connect-wallet', 'disconnect-wallet', 'change-nft-view'],
   data() {
     return {
-      isOpen: false,
+      isOpen: true,
       isMinimized: false,
       hidden: false,
       command: '',
@@ -72,7 +72,7 @@ export default {
       isDragging: false,
       dragOffset: { x: 0, y: 0 },
       commands: {
-        help: 'Available commands: connect, disconnect, profile, nft, portfolio, coins, trends, about, guide, clear',
+        help: 'Available commands: connect, disconnect, profile, nft, portfolio, coins, trends, about, guide, nft-gw, nft-gc, clear',
         profile: '/profile',
         nft: '/nft',
         portfolio: '/portfolio',
@@ -82,7 +82,10 @@ export default {
         guide: '/guide',
         clear: 'clear',
         connect: 'connect',
-        disconnect: 'disconnect'
+        disconnect: 'disconnect',
+        home: '/',
+        'nft-gw': 'nft-group-wallet',
+        'nft-gc': 'nft-group-collection'
       }
     }
   },
@@ -151,7 +154,21 @@ export default {
         return
       }
 
-      if (cmd === 'connect') {
+      if (cmd === 'nft-gw' || cmd === 'nft-gc') {
+        const mode = cmd === 'nft-gw' ? 'wallet' : 'collection'
+        
+        if (this.$route.path !== '/nft') {
+          this.$router.push('/nft').then(() => {
+            this.$nextTick(() => {
+              this.$emit('change-nft-view', mode)
+            })
+          })
+        } else {
+          this.$emit('change-nft-view', mode)
+        }
+        
+        response = `Switched to Group by ${mode === 'wallet' ? 'Wallet' : 'Collection'} view`
+      } else if (cmd === 'connect') {
         if (this.walletConnected) {
           response = 'Wallet is already connected!'
         } else {

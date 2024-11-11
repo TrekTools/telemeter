@@ -1,5 +1,5 @@
 <template>
-  <div v-if="hasRequiredNFT" class="nft-analysis">
+  <div v-if="hasRequiredNFT" class="nft-analysis" ref="nftAnalysis">
     <h1>NFT Analysis</h1>
     
     <div class="view-controls">
@@ -386,6 +386,13 @@ export default {
     clearCache() {
       sessionStorage.removeItem('nftAnalysisCache')
       this.isDataCached = false
+    },
+    changeViewMode(mode) {
+      if (mode === 'wallet' || mode === 'collection') {
+        this.viewMode = mode
+        // Update cache
+        this.cacheData()
+      }
     }
   },
   async created() {

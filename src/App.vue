@@ -1,5 +1,6 @@
 <template>
   <router-view 
+    ref="routerView"
     :walletConnected="isConnected"
     :walletAddress="walletAddress"
     :evmAddress="evmAddress"
@@ -62,6 +63,7 @@
     :wallet-connected="isConnected"
     @connect-wallet="handleConnect"
     @disconnect-wallet="disconnectWallet"
+    @change-nft-view="handleNftViewChange"
   />
 </template>
 
@@ -218,6 +220,20 @@ export default {
           console.error('Error disconnecting Compass wallet:', error)
         }
       }
+    },
+    handleNftViewChange(mode) {
+      this.$nextTick(() => {
+        const nftComponent = this.$refs.routerView
+        if (nftComponent) {
+          // Directly set the viewMode
+          nftComponent.viewMode = mode
+          
+          // If the component has a cacheData method, call it
+          if (typeof nftComponent.cacheData === 'function') {
+            nftComponent.cacheData()
+          }
+        }
+      })
     }
   }
 }
