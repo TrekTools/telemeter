@@ -91,8 +91,18 @@ export default {
   },
   watch: {
     walletConnected: {
-      handler(newVal) {
+      handler(newVal, oldVal) {
         console.log('CommandToast: Wallet connection changed:', newVal)
+        if (oldVal !== newVal) {
+          const message = newVal 
+            ? `Successfully connected wallet: ${this.truncateAddress(this.walletAddress)}`
+            : 'Wallet disconnected'
+          
+          this.commandLogs.push({
+            command: newVal ? 'connect' : 'disconnect',
+            response: message
+          })
+        }
       },
       immediate: true
     },
@@ -216,18 +226,18 @@ export default {
         case 'connect':
           if (!this.walletConnected) {
             this.$emit('connect-wallet')
-            response = 'Connecting wallet...'
+            response = 'Initiating wallet connection...'
           } else {
-            response = 'Wallet already connected'
+            response = `Wallet already connected: ${this.truncateAddress(this.walletAddress)}`
           }
           break
 
         case 'disconnect':
           if (this.walletConnected) {
             this.$emit('disconnect-wallet')
-            response = 'Disconnecting wallet...'
+            response = 'Initiating wallet disconnection...'
           } else {
-            response = 'Wallet not connected'
+            response = 'No wallet connected'
           }
           break
 
@@ -366,18 +376,49 @@ export default {
         hasAccess: hasRequiredNFT
       })
       return hasRequiredNFT
+    },
+    truncateAddress(address) {
+      if (!address) return ''
+      return `${address.slice(0, 6)}...${address.slice(-4)}`
     }
   }
 }
 </script>
 
 <style scoped>
+/* Add base styles for the toast container */
+.command-toast {
+  position: fixed;
+  max-width: 30vw;  /* 30% of viewport width */
+  width: 400px;     /* base width, but won't exceed 30vw */
+  background-color: rgba(21, 32, 43, 0.85);  /* semi-transparent dark blue */
+  border: 1px solid rgba(66, 185, 131, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);  /* adds slight blur to content behind */
+  font-family: monospace;
+  overflow: hidden;
+}
+
+/* Update existing styles */
+.toast-header {
+  background-color: rgba(21, 32, 43, 0.95);
+  padding: 8px;
+  border-bottom: 1px solid rgba(66, 185, 131, 0.3);
+}
+
+.toast-content {
+  padding: 12px;
+  max-height: 60vh;  /* limit height to 60% of viewport */
+  overflow-y: auto;
+}
+
 .warp-boi-greeting {
+  background: rgba(66, 185, 131, 0.15);  /* more transparent */
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(66, 185, 131, 0.1);
   border-radius: 8px;
   margin-bottom: 12px;
 }
@@ -403,10 +444,10 @@ export default {
 }
 
 .command-line {
+  background: rgba(0, 0, 0, 0.2);  /* more transparent */
   display: flex;
   align-items: center;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.3);
   border-radius: 4px;
 }
 
@@ -446,5 +487,22 @@ input {
   font-family: monospace;
   margin-top: 4px;
   padding-left: 16px;
+}
+
+/* Add responsive handling */
+@media (max-width: 768px) {
+  .command-toast {
+    width: 90vw;  /* wider on mobile */
+    max-width: none;
+    font-size: 14px;
+  }
+}
+
+/* Update minimized state */
+.minimized {
+  height: auto;
+  .toast-content {
+    display: none;
+  }
 }
 </style> 

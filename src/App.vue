@@ -18,6 +18,8 @@
     :evm-address="evmAddress"
     :warp-bois-count="warpBoisCount"
     :tac-count="tacCount"
+    @connect-wallet="handleConnect"
+    @disconnect-wallet="disconnectWallet"
   />
 
   <NftConveyor 
