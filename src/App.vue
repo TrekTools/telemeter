@@ -89,6 +89,7 @@ import NftConveyor from './components/NftConveyor.vue'
 import CommandToast from '@/components/CommandToast.vue'
 import supabase from './supabase'  // Import shared instance
 import { v4 as uuidv4 } from 'uuid'
+import { ref, provide } from 'vue'
 
 export default {
   name: 'App',
@@ -108,7 +109,10 @@ export default {
       isDrawerOpen: false,
       isMobile: false,
       activeWarpBoi: null,
-      terminalHidden: false
+      terminalHidden: false,
+      nftAnalysisData: {
+        linkedWallets: []
+      }
     }
   },
   created() {
@@ -264,6 +268,19 @@ export default {
         this.$refs.commandToast.hidden = false
         this.terminalHidden = false
       }
+    }
+  },
+  setup() {
+    const sharedTokenValue = ref(0)
+    provide('tokenValue', sharedTokenValue)
+    
+    const updateSharedTokenValue = (value) => {
+      sharedTokenValue.value = value
+    }
+
+    return {
+      sharedTokenValue,
+      updateSharedTokenValue
     }
   }
 }

@@ -2,6 +2,11 @@
   <div v-if="hasRequiredNFT" class="nft-analysis" ref="nftAnalysis">
     <h1>NFT Analysis</h1>
     
+    <ValueSummaryTiles 
+      :token-value="receivedTokenValue"
+      :nft-value="totalNftValue"
+    />
+    
     <div class="view-controls">
       <button 
         :class="['view-button', { active: viewMode === 'wallet' }]" 
@@ -119,6 +124,8 @@
 
 <script>
 import supabase from '../supabase'
+import ValueSummaryTiles from '@/components/ValueSummaryTiles.vue'
+import { inject } from 'vue'
 
 const HASURA_ENDPOINT = process.env.VUE_APP_GRAPHQL_ENDPOINT // Add this to your .env
 
@@ -134,6 +141,9 @@ export default {
       type: Number,
       default: 0
     }
+  },
+  components: {
+    ValueSummaryTiles
   },
   data() {
     return {
@@ -205,6 +215,12 @@ export default {
       })
 
       return filtered
+    },
+    totalNftValue() {
+      return this.linkedWallets.reduce((total, wallet) => {
+        const walletValue = parseFloat(this.calculateWalletValue(wallet.nfts))
+        return total + walletValue
+      }, 0)
     }
   },
   methods: {
@@ -413,10 +429,11 @@ export default {
   updated() {
     this.cacheData()
   },
-  beforeUnmount() {
-    // Only clear if navigating away from the app
-    if (!document.hidden) {
-      this.cacheData()
+  setup() {
+    const tokenValue = inject('tokenValue', 0)
+    
+    return {
+      receivedTokenValue: tokenValue
     }
   }
 }

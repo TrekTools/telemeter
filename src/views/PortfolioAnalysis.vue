@@ -2,6 +2,20 @@
   <div v-if="hasRequiredNFT" class="portfolio-analysis">
     <h1>Portfolio Analysis</h1>
     
+    <ValueSummaryTiles 
+      :token-value="totalTokenValue"
+      :nft-value="totalNftValue"
+    />
+    
+    <div class="search-container">
+      <input 
+        type="text" 
+        v-model="searchQuery" 
+        placeholder="Search tokens..."
+        class="search-input"
+      />
+    </div>
+    
     <div v-if="loading" class="loading">
       Loading portfolio data...
     </div>
@@ -14,24 +28,35 @@
       <table class="token-table">
         <thead>
           <tr>
-            <th>Symbol</th>
-            <th>Name</th>
-            <th>Address</th>
-            <th>Holders</th>
-            <th>Total Supply</th>
-            <th>Balance</th>
-            <th>Type</th>
+            <th @click="sort('walletLabel')" class="sortable">
+              Wallet
+              <span class="sort-indicator">{{ getSortIndicator('walletLabel') }}</span>
+            </th>
+            <th @click="sort('name')" class="sortable">
+              Name
+              <span class="sort-indicator">{{ getSortIndicator('name') }}</span>
+            </th>
+            <th @click="sort('adjustedBalance')" class="sortable">
+              Balance
+              <span class="sort-indicator">{{ getSortIndicator('adjustedBalance') }}</span>
+            </th>
+            <th @click="sort('priceUSD')" class="sortable">
+              Price (USD)
+              <span class="sort-indicator">{{ getSortIndicator('priceUSD') }}</span>
+            </th>
+            <th @click="sort('calculatedValue')" class="sortable">
+              Value (USD)
+              <span class="sort-indicator">{{ getSortIndicator('calculatedValue') }}</span>
+            </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="token in tokens" :key="token.address">
-            <td>{{ token.symbol }}</td>
+          <tr v-for="token in filteredAndSortedTokens" :key="token.address">
+            <td>{{ token.walletLabel }}</td>
             <td>{{ token.name }}</td>
-            <td class="address">{{ truncateAddress(token.address) }}</td>
-            <td>{{ formatNumber(token.holders) }}</td>
-            <td>{{ formatNumber(token.total_supply) }}</td>
-            <td>{{ formatNumber(token.value) }}</td>
-            <td>{{ token.type }}</td>
+            <td>{{ formatNumber(token.adjustedBalance, 6) }}</td>
+            <td>${{ formatNumber(token.priceUSD || 0, 4) }}</td>
+            <td>${{ formatNumber(token.calculatedValue, 6) }}</td>
           </tr>
         </tbody>
       </table>
@@ -45,8 +70,14 @@
 </template>
 
 <script>
+import supabase from '../supabase'
+import ValueSummaryTiles from '@/components/ValueSummaryTiles.vue'
+
 export default {
   name: 'PortfolioAnalysis',
+  components: {
+    ValueSummaryTiles
+  },
   
   props: {
     warpBoisCount: {
@@ -72,12 +103,71 @@ export default {
       loading: true,
       error: null,
       tokens: [],
+      prices: {},
+      searchQuery: '',
+      sortKey: 'calculatedValue',
+      sortOrder: 'desc',
+      internalWalletLabels: {},
+      linkedWallets: []
     }
   },
 
   computed: {
     hasRequiredNFT() {
       return this.warpBoisCount > 0 || this.tacCount > 0
+    },
+    tokensWithPrices() {
+      return this.tokens.map(token => ({
+        ...token,
+        priceUSD: this.prices[token.address]?.PriceUSD || 0
+      }))
+    },
+    filteredAndSortedTokens() {
+      let result = this.tokensWithPrices.map(token => {
+        const decimals = this.prices[token.address]?.Decimals || 0
+        const adjustedBalance = token.value / Math.pow(10, decimals)
+        return {
+          ...token,
+          adjustedBalance,
+          calculatedValue: (token.priceUSD || 0) * adjustedBalance,
+          walletLabel: this.internalWalletLabels[token.walletAddress] || this.truncateAddress(token.walletAddress)
+        }
+      })
+
+      // Filter
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase()
+        result = result.filter(token => 
+          token.name.toLowerCase().includes(query) ||
+          token.walletLabel.toLowerCase().includes(query)
+        )
+      }
+
+      // Sort
+      result.sort((a, b) => {
+        let aVal = a[this.sortKey]
+        let bVal = b[this.sortKey]
+        
+        // Convert string numbers to actual numbers for sorting
+        if (typeof aVal === 'string' && !isNaN(aVal)) aVal = Number(aVal)
+        if (typeof bVal === 'string' && !isNaN(bVal)) bVal = Number(bVal)
+        
+        if (aVal < bVal) return this.sortOrder === 'asc' ? -1 : 1
+        if (aVal > bVal) return this.sortOrder === 'asc' ? 1 : -1
+        return 0
+      })
+
+      return result
+    },
+    totalTokenValue() {
+      return this.filteredAndSortedTokens.reduce((sum, token) => {
+        return sum + (token.calculatedValue || 0)
+      }, 0)
+    },
+    totalNftValue() {
+      return this.linkedWallets?.reduce((total, wallet) => {
+        return total + this.calculateWalletValue(wallet.nfts)
+      }, 0) || 0
     }
   },
 
@@ -87,9 +177,12 @@ export default {
       return `${address.slice(0, 6)}...${address.slice(-4)}`
     },
 
-    formatNumber(num) {
+    formatNumber(num, decimals = 0) {
       if (!num) return '0'
-      return new Intl.NumberFormat().format(num)
+      return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      }).format(num)
     },
 
     async fetchTokens(address, type) {
@@ -103,9 +196,181 @@ export default {
       }
     },
 
-    async fetchAllTokens() {
+    async fetchPrices() {
+      try {
+        // First query to get current_max
+        const maxRecordResponse = await fetch(process.env.VUE_APP_GRAPHQL_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-hasura-admin-secret': process.env.VUE_APP_HASURA_ADMIN_SECRET
+          },
+          body: JSON.stringify({
+            query: `
+              query mrn24 {
+                max_record_24 {
+                  current_max
+                }
+              }
+            `
+          })
+        })
+        
+        const maxRecordJson = await maxRecordResponse.json()
+        if (maxRecordJson.errors) throw new Error(maxRecordJson.errors[0].message)
+        
+        const currentMax = maxRecordJson.data.max_record_24[0].current_max
+
+        // Second query using the currentMax value and including Decimals
+        const pricesResponse = await fetch(process.env.VUE_APP_GRAPHQL_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-hasura-admin-secret': process.env.VUE_APP_HASURA_ADMIN_SECRET
+          },
+          body: JSON.stringify({
+            query: `
+              query latest_prices {
+                token_prices(where: {record: {_eq: ${currentMax}}}) {
+                  Token
+                  rounded_time
+                  PriceUSD
+                  Decimals
+                }
+              }
+            `
+          })
+        })
+        
+        const pricesJson = await pricesResponse.json()
+        if (pricesJson.errors) throw new Error(pricesJson.errors[0].message)
+        
+        // Convert to lookup object
+        this.prices = pricesJson.data.token_prices.reduce((acc, price) => {
+          acc[price.Token] = price
+          return acc
+        }, {})
+      } catch (error) {
+        console.error('Error fetching prices:', error)
+        this.error = 'Failed to fetch price data'
+      }
+    },
+
+    async fetchWalletLabels() {
+      try {
+        let query;
+        if (this.walletAddress.startsWith('sei')) {
+          query = supabase
+            .from('linked_wallets')
+            .select('sei_hash, evm_hash, label')
+            .eq('control_sei_hash', this.walletAddress)
+        } else if (this.walletAddress.startsWith('0x')) {
+          query = supabase
+            .from('linked_wallets')
+            .select('sei_hash, evm_hash, label')
+            .eq('control_evm_hash', this.walletAddress)
+        }
+
+        const { data, error } = await query
+        if (error) throw error
+
+        // Convert to lookup object for both SEI and EVM addresses
+        this.internalWalletLabels = data.reduce((acc, wallet) => {
+          acc[wallet.sei_hash] = wallet.label || `Wallet ${wallet.sei_hash.slice(0, 6)}`
+          if (wallet.evm_hash) {
+            acc[wallet.evm_hash] = wallet.label || `Wallet ${wallet.evm_hash.slice(0, 6)}`
+          }
+          return acc
+        }, {})
+
+        console.log('Fetched Labels:', data) // Debug log
+        console.log('Processed Labels:', this.internalWalletLabels) // Debug log
+      } catch (error) {
+        console.error('Error fetching wallet labels:', error)
+      }
+    },
+
+    async fetchNFTsForWallet(wallet) {
+      try {
+        const response = await fetch(
+          `https://api.pallet.exchange/api/v1/user/${wallet.sei_hash}?network=mainnet&include_tokens=true&include_bids=true`
+        )
+        const data = await response.json()
+        
+        if (data.nfts && data.nfts.length > 0) {
+          const uniqueAddresses = [...new Set(data.nfts.map(nft => nft.collection?.evm_address))]
+          const collectionStats = await this.fetchCollectionStats(uniqueAddresses)
+          
+          const statsMap = {}
+          collectionStats.forEach(stats => {
+            if (stats && stats.evm_address) {
+              statsMap[stats.evm_address] = stats
+            }
+          })
+
+          return data.nfts.map(nft => ({
+            ...nft,
+            collection_stats: statsMap[nft.collection?.evm_address] || null
+          }))
+        }
+        return []
+      } catch (error) {
+        console.error(`Error fetching NFTs for wallet ${wallet.sei_hash}:`, error)
+        return []
+      }
+    },
+
+    async fetchCollectionStats(evmAddresses) {
+      try {
+        const response = await fetch(process.env.VUE_APP_GRAPHQL_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-hasura-admin-secret': process.env.VUE_APP_HASURA_ADMIN_SECRET
+          },
+          body: JSON.stringify({
+            query: `
+              query collection_stats($addresses: [String!]) {
+                pallet_time_comparison(where: {evm_address: {_in: $addresses}}) {
+                  evm_address
+                  name
+                  current_floor_1h
+                  current_volume_1h
+                  current_owners_1h
+                  current_auction_count_1h
+                }
+              }
+            `,
+            variables: {
+              addresses: evmAddresses
+            }
+          })
+        })
+        
+        const responseData = await response.json()
+        return responseData.data?.pallet_time_comparison || []
+      } catch (error) {
+        console.error('Error in fetchCollectionStats:', error)
+        return []
+      }
+    },
+
+    calculateWalletValue(nfts) {
+      if (!nfts) return 0
+      return nfts.reduce((sum, nft) => {
+        const floor = parseFloat(nft.collection_stats?.current_floor_1h) || 0
+        return sum + floor
+      }, 0)
+    },
+
+    async fetchAllData() {
       this.loading = true
       try {
+        await Promise.all([
+          this.fetchWalletLabels(),
+          this.fetchPrices()
+        ])
+
         const [erc20Tokens, cw20Tokens, nativeTokens] = await Promise.all([
           this.fetchTokens(this.evmAddress, 'ERC-20'),
           this.fetchTokens(this.walletAddress, 'CW-20'),
@@ -114,23 +379,84 @@ export default {
 
         // Process and combine all tokens
         this.tokens = [
-          ...erc20Tokens.map(t => ({ ...t.token, value: t.value, type: 'ERC-20' })),
-          ...cw20Tokens.map(t => ({ ...t.token, value: t.value, type: 'CW-20' })),
-          ...nativeTokens.map(t => ({ ...t.token, value: t.value, type: 'NATIVE' }))
+          ...erc20Tokens.map(t => ({ 
+            ...t.token, 
+            value: t.value, 
+            type: 'ERC-20',
+            walletAddress: this.evmAddress,
+            walletLabel: this.internalWalletLabels[this.evmAddress] || this.truncateAddress(this.evmAddress)
+          })),
+          ...cw20Tokens.map(t => ({ 
+            ...t.token, 
+            value: t.value, 
+            type: 'CW-20',
+            walletAddress: this.walletAddress,
+            walletLabel: this.internalWalletLabels[this.walletAddress] || this.truncateAddress(this.walletAddress)
+          })),
+          ...nativeTokens.map(t => ({ 
+            ...t.token, 
+            value: t.value, 
+            type: 'NATIVE',
+            walletAddress: this.walletAddress,
+            walletLabel: this.internalWalletLabels[this.walletAddress] || this.truncateAddress(this.walletAddress)
+          }))
         ]
 
+        // Fetch NFTs for all linked wallets
+        const linkedWalletsData = await supabase
+          .from('linked_wallets')
+          .select('*')
+          .eq('control_sei_hash', this.walletAddress)
+
+        if (linkedWalletsData.error) throw linkedWalletsData.error
+
+        // Fetch NFTs for each wallet
+        const walletsWithNfts = await Promise.all(
+          linkedWalletsData.data.map(async wallet => ({
+            ...wallet,
+            nfts: await this.fetchNFTsForWallet(wallet)
+          }))
+        )
+
+        this.linkedWallets = walletsWithNfts
         this.loading = false
       } catch (error) {
+        console.error('Error in fetchAllData:', error)
         this.error = 'Failed to fetch portfolio data'
         this.loading = false
+      }
+    },
+
+    sort(key) {
+      if (this.sortKey === key) {
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc'
+      } else {
+        this.sortKey = key
+        this.sortOrder = 'desc'
+      }
+    },
+
+    getSortIndicator(key) {
+      if (this.sortKey !== key) return '↕'
+      return this.sortOrder === 'asc' ? '↑' : '↓'
+    }
+  },
+
+  watch: {
+    totalTokenValue: {
+      immediate: true,
+      handler(newValue) {
+        this.$emit('token-value-update', newValue)
       }
     }
   },
 
   mounted() {
     if (this.hasRequiredNFT && this.walletAddress) {
-      this.fetchAllTokens()
+      this.fetchAllData()
     }
+    // Emit initial token value
+    this.$emit('token-value-update', this.totalTokenValue)
   }
 }
 </script>
@@ -162,12 +488,13 @@ export default {
   width: 100%;
   border-collapse: collapse;
   color: white;
+  margin-top: 20px;
 }
 
 .token-table th,
 .token-table td {
-  padding: 10px;
-  text-align: left;
+  padding: 12px;
+  text-align: right;
 }
 
 .token-table th {
@@ -190,5 +517,67 @@ export default {
   text-align: center;
   margin-top: 20px;
   color: #ff4444;
+}
+
+.token-table td:first-child,
+.token-table td:nth-child(2) {
+  text-align: left;
+}
+
+.search-container {
+  margin: 20px 0;
+  padding: 0 20px;
+}
+
+.search-input {
+  width: 100%;
+  max-width: 300px;
+  padding: 8px 12px;
+  border: 1px solid rgba(66, 185, 131, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #42b983;
+  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.2);
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.sortable:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.sort-indicator {
+  margin-left: 5px;
+  color: #42b983;
+  font-size: 0.8em;
+}
+
+.token-table th {
+  padding: 12px 24px 12px 12px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background-color 0.2s;
+}
+
+.token-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.token-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.token-table tbody tr:last-child {
+  border-bottom: none;
 }
 </style>
