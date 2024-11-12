@@ -7,6 +7,10 @@
       :nft-value="totalNftValue"
     />
     
+    <div class="beta-notice">
+      ⓘ Note: While beta evaluation is ongoing, token values are currently updated once per day.
+    </div>
+    
     <div class="search-container">
       <input 
         type="text" 
@@ -51,7 +55,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="token in filteredAndSortedTokens" :key="token.address">
+          <tr v-for="(token, index) in filteredAndSortedTokens" :key="token.address + '-' + index">
             <td>{{ token.walletLabel }}</td>
             <td>{{ token.name }}</td>
             <td>{{ formatNumber(token.adjustedBalance, 6) }}</td>
@@ -123,6 +127,8 @@ export default {
       }))
     },
     filteredAndSortedTokens() {
+      const query = this.searchQuery.trim().toLowerCase()
+
       let result = this.tokensWithPrices.map(token => {
         const decimals = this.prices[token.address]?.Decimals || 0
         const adjustedBalance = token.value / Math.pow(10, decimals)
@@ -134,24 +140,35 @@ export default {
         }
       })
 
-      // Filter
-      if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase()
+      // Filter based on the search query
+      if (query) {
         result = result.filter(token => 
           token.name.toLowerCase().includes(query) ||
           token.walletLabel.toLowerCase().includes(query)
         )
+      } else {
+        // Reset to all tokens if query is empty
+        result = this.tokensWithPrices.map(token => {
+          const decimals = this.prices[token.address]?.Decimals || 0
+          const adjustedBalance = token.value / Math.pow(10, decimals)
+          return {
+            ...token,
+            adjustedBalance,
+            calculatedValue: (token.priceUSD || 0) * adjustedBalance,
+            walletLabel: this.internalWalletLabels[token.walletAddress] || this.truncateAddress(token.walletAddress)
+          }
+        })
       }
 
-      // Sort
+      // Sort the results
       result.sort((a, b) => {
         let aVal = a[this.sortKey]
         let bVal = b[this.sortKey]
-        
+
         // Convert string numbers to actual numbers for sorting
         if (typeof aVal === 'string' && !isNaN(aVal)) aVal = Number(aVal)
         if (typeof bVal === 'string' && !isNaN(bVal)) bVal = Number(bVal)
-        
+
         if (aVal < bVal) return this.sortOrder === 'asc' ? -1 : 1
         if (aVal > bVal) return this.sortOrder === 'asc' ? 1 : -1
         return 0
@@ -574,5 +591,15 @@ export default {
 
 .token-table tbody tr:last-child {
   border-bottom: none;
+}
+
+.beta-notice {
+  background: rgba(66, 185, 131, 0.1);
+  border-left: 4px solid #42b983;
+  padding: 12px 20px;
+  margin: 20px;
+  border-radius: 4px;
+  color: #42b983;
+  font-size: 0.9em;
 }
 </style>

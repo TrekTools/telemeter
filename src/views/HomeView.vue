@@ -7,13 +7,13 @@
           <span class="terminal-circle yellow"></span>
           <span class="terminal-circle green"></span>
         </span>
-        <span class="terminal-title">[CLASSIFIED]_v1.0</span>
+        <span class="terminal-title">telemeter_bata_v0.1</span>
       </div>
       <div class="terminal-content">
         <span class="prompt">$</span>
-        <span class="command">./access_[REDACTED]</span>
+        <span class="command">./access_advanced</span>
         <span class="response">
-          <span class="redacted">████████</span> protocol initialized...
+          <span class="redacted">TELEMETER</span> protocol initialized...
           <br>
           clearance level: <span class="highlight">ALPHA</span>
           <br>
@@ -46,7 +46,7 @@
     </p>
     <HomeCharts />
 
-    <h1>welcome to ████████</h1>
+    <h1>welcome to Telemeter v0.1 (Beta)</h1>
     
     <div class="feature-grid">
       <div class="feature-card">
