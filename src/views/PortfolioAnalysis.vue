@@ -112,7 +112,8 @@ export default {
       sortKey: 'calculatedValue',
       sortOrder: 'desc',
       internalWalletLabels: {},
-      linkedWallets: []
+      linkedWallets: [],
+      seiUsdPrice: 0
     }
   },
 
@@ -181,10 +182,18 @@ export default {
         return sum + (token.calculatedValue || 0)
       }, 0)
     },
+    seiPrice() {
+      // Get SEI price from the existing prices data
+      // Using the native SEI token address
+      return this.prices['usei']?.PriceUSD || 0
+    },
     totalNftValue() {
-      return this.linkedWallets?.reduce((total, wallet) => {
+      const nftValueInSei = this.linkedWallets?.reduce((total, wallet) => {
         return total + this.calculateWalletValue(wallet.nfts)
       }, 0) || 0
+
+      // Convert SEI value to USD
+      return nftValueInSei * this.seiPrice
     }
   },
 
@@ -372,17 +381,37 @@ export default {
       }
     },
 
+    async fetchSeiPrice() {
+      try {
+        const response = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=SEI', {
+          headers: {
+            'X-CMC_PRO_API_KEY': process.env.VUE_APP_CMC_API_KEY,
+            'Accept': 'application/json'
+          }
+        })
+        
+        const data = await response.json()
+        if (data.data?.SEI?.quote?.USD?.price) {
+          this.seiUsdPrice = data.data.SEI.quote.USD.price
+        }
+      } catch (error) {
+        console.error('Error fetching SEI price:', error)
+      }
+    },
+
     calculateWalletValue(nfts) {
       if (!nfts) return 0
       return nfts.reduce((sum, nft) => {
-        const floor = parseFloat(nft.collection_stats?.current_floor_1h) || 0
-        return sum + floor
+        const floorInSei = parseFloat(nft.collection_stats?.current_floor_1h) || 0
+        return sum + floorInSei
       }, 0)
     },
 
     async fetchAllData() {
       this.loading = true
       try {
+        await this.fetchSeiPrice()
+        
         await Promise.all([
           this.fetchWalletLabels(),
           this.fetchPrices()

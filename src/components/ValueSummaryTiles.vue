@@ -10,7 +10,7 @@
     </div>
     <div class="value-tile">
       <h3>NFT Portfolio Value</h3>
-      <div class="value">${{ formatNumber(nftValue, 2) }} SEI</div>
+      <div class="value">${{ formatNumber(nftValue, 2) }}</div>
     </div>
   </div>
 </template>
