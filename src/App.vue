@@ -53,6 +53,7 @@
         <router-link to="/nft" class="nav-link">NFT Analysis</router-link>
         <router-link to="/trends" class="nav-link">Market Trends</router-link>
         <router-link to="/profile" class="nav-link">Profile</router-link>
+        <router-link to="/warp" class="nav-link">$WARP</router-link>
       </template>
     </nav>
 
@@ -75,6 +76,7 @@
             <router-link to="/nft" class="drawer-link" @click="closeDrawer">NFT Analysis</router-link>
             <router-link to="/trends" class="drawer-link" @click="closeDrawer">Market Trends</router-link>
             <router-link to="/profile" class="drawer-link" @click="closeDrawer">Profile</router-link>
+            <router-link to="/warp" class="drawer-link" @click="closeDrawer">$WARP</router-link>
           </template>
         </div>
       </div>

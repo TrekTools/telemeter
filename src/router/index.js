@@ -7,6 +7,7 @@ import PortfolioAnalysis from '../views/PortfolioAnalysis.vue'
 import TelemeterGuide from '../views/TelemeterGuide.vue'
 import AboutPage from '../views/AboutPage.vue'
 import TrendAnalysis from '../views/TrendAnalysis.vue'
+import WarpToken from '@/views/WarpToken.vue'
 
 let appInstance = null
 
@@ -62,6 +63,12 @@ const router = createRouter({
       path: '/about',
       name: 'about',
       component: AboutPage
+    },
+    {
+      path: '/warp',
+      name: 'WarpToken',
+      component: WarpToken,
+      props: true
     }
   ]
 })
