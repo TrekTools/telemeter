@@ -593,6 +593,14 @@ export default {
           navigateProtected('/coins', 'coins page')
           break
 
+        case 'prof':
+          navigateProtected('/profile', 'profile page')
+          break
+
+        case 'warp':
+          navigateProtected('/warp', '$WARP token page')
+          break
+
         case 'nfts':
           navigateProtected('/nft', 'NFT analysis page')
           break
