@@ -538,11 +538,17 @@ export default {
           home - Go to home page
           about - Go to about page
           guide - Go to guide page
-          portfolio - Go to portfolio (requires NFT)
+          port - Go to portfolio (requires NFT)
+          nfts - Go to NFT analysis (requires NFT)
           coins - Go to coins page (requires NFT)
           nft - Go to NFT analysis (requires NFT)
           trends - Go to market trends (requires NFT)
-          profile - Go to profile (requires NFT)`
+          prof - Go to profile (requires NFT)
+          
+          Warp Commands:
+          buy-warp - Get your Warp Boi
+          wen - When Warp?
+          ca - Show contract address`
           break
 
         case 'connect':
@@ -579,7 +585,7 @@ export default {
           response = 'Navigating to guide page...'
           break
 
-        case 'portfolio':
+        case 'port':
           navigateProtected('/portfolio', 'portfolio page')
           break
 
@@ -587,16 +593,57 @@ export default {
           navigateProtected('/coins', 'coins page')
           break
 
-        case 'nft':
+        case 'nfts':
           navigateProtected('/nft', 'NFT analysis page')
           break
-
+        
         case 'trends':
           navigateProtected('/trends', 'market trends page')
           break
 
-        case 'profile':
-          navigateProtected('/profile', 'profile page')
+        case 'buy-warp':
+          window.open('https://seipex.fi/0x921FaF220dcaf3E32FCd474d12C3892040DDe623', '_blank')
+          response = 'Opening Warp Boi marketplace...'
+          break
+
+        case 'wen':
+          if (this.activeWarpBoi) {
+            this.forceGreetingUpdate = Date.now()
+            this.activeWarpBoi = {
+              ...this.activeWarpBoi,
+              tempGreeting: 'Soon!'
+            }
+            setTimeout(() => {
+              this.activeWarpBoi = {
+                ...this.activeWarpBoi,
+                tempGreeting: null
+              }
+              this.forceGreetingUpdate = Date.now()
+            }, 3000)
+            response = 'Soon!'
+          } else {
+            response = 'No Warp Boi detected'
+          }
+          break
+
+        case 'ca':
+          if (this.activeWarpBoi) {
+            this.forceGreetingUpdate = Date.now()
+            this.activeWarpBoi = {
+              ...this.activeWarpBoi,
+              tempGreeting: '0x921FaF220dcaf3E32FCd474d12C3892040DDe623'
+            }
+            setTimeout(() => {
+              this.activeWarpBoi = {
+                ...this.activeWarpBoi,
+                tempGreeting: null
+              }
+              this.forceGreetingUpdate = Date.now()
+            }, 5000)
+            response = 'Contract Address: 0x921FaF220dcaf3E32FCd474d12C3892040DDe623'
+          } else {
+            response = 'No Warp Boi detected'
+          }
           break
 
         case 'clear':

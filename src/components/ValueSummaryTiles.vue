@@ -1,5 +1,9 @@
 <template>
   <div class="value-summary">
+    <div class="value-tile total">
+      <h3>Total Portfolio Value</h3>
+      <div class="value">${{ formatNumber(totalValue, 2) }}</div>
+    </div>
     <div class="value-tile">
       <h3>Token Portfolio Value</h3>
       <div class="value">${{ formatNumber(tokenValue, 2) }}</div>
@@ -22,6 +26,11 @@ export default {
     nftValue: {
       type: Number,
       default: 0
+    }
+  },
+  computed: {
+    totalValue() {
+      return this.tokenValue + this.nftValue
     }
   },
   methods: {
@@ -50,6 +59,17 @@ export default {
   border-radius: 8px;
   padding: 20px;
   text-align: center;
+}
+
+.value-tile.total {
+  flex: 1.5;
+  background: #1a1a1a;
+  border: 1px solid #42b983;
+}
+
+.value-tile.total .value {
+  font-size: 2.2em;
+  color: #42b983;
 }
 
 .value-tile h3 {

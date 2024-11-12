@@ -1,6 +1,15 @@
 <template>
-  <div v-if="hasRequiredNFT" class="warp-token">
-    <h1>$WARP Token Analytics</h1>
+  <div class="warp-token">
+    <h1>$WARP Token Analytics (Coming Soon)</h1>
+    
+    <a 
+      href="https://seipex.fi/0x921FaF220dcaf3E32FCd474d12C3892040DDe623" 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      class="buy-warp-button"
+    >
+      BUY WARP
+    </a>
     
     <div v-if="loading" class="loading">
       Loading token data...
@@ -153,5 +162,33 @@ export default {
 
 .error {
   color: #ff6b6b;
+}
+
+.buy-warp-button {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  margin: 20px auto;
+  padding: 20px;
+  background: #42b983;
+  color: #1a1a1a;
+  text-align: center;
+  font-size: 1.5em;
+  font-weight: bold;
+  text-decoration: none;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.buy-warp-button:hover {
+  background: #3aa876;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(66, 185, 131, 0.3);
+  border-color: #42b983;
+}
+
+.buy-warp-button:active {
+  transform: translateY(0);
 }
 </style> 

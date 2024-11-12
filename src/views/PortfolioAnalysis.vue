@@ -371,44 +371,39 @@ export default {
           this.fetchPrices()
         ])
 
-        const [erc20Tokens, cw20Tokens, nativeTokens] = await Promise.all([
-          this.fetchTokens(this.evmAddress, 'ERC-20'),
-          this.fetchTokens(this.walletAddress, 'CW-20'),
-          this.fetchTokens(this.walletAddress, 'NATIVE')
-        ])
-
-        // Process and combine all tokens
-        this.tokens = [
-          ...erc20Tokens.map(t => ({ 
-            ...t.token, 
-            value: t.value, 
-            type: 'ERC-20',
-            walletAddress: this.evmAddress,
-            walletLabel: this.internalWalletLabels[this.evmAddress] || this.truncateAddress(this.evmAddress)
-          })),
-          ...cw20Tokens.map(t => ({ 
-            ...t.token, 
-            value: t.value, 
-            type: 'CW-20',
-            walletAddress: this.walletAddress,
-            walletLabel: this.internalWalletLabels[this.walletAddress] || this.truncateAddress(this.walletAddress)
-          })),
-          ...nativeTokens.map(t => ({ 
-            ...t.token, 
-            value: t.value, 
-            type: 'NATIVE',
-            walletAddress: this.walletAddress,
-            walletLabel: this.internalWalletLabels[this.walletAddress] || this.truncateAddress(this.walletAddress)
-          }))
-        ]
-
-        // Fetch NFTs for all linked wallets
+        // First, get all linked wallets
         const linkedWalletsData = await supabase
           .from('linked_wallets')
           .select('*')
           .eq('control_sei_hash', this.walletAddress)
 
         if (linkedWalletsData.error) throw linkedWalletsData.error
+        
+        // Create an array of promises for fetching tokens from all wallets
+        const tokenPromises = linkedWalletsData.data.flatMap(wallet => [
+          this.fetchTokens(wallet.evm_hash, 'ERC-20'),
+          this.fetchTokens(wallet.sei_hash, 'CW-20'),
+          this.fetchTokens(wallet.sei_hash, 'NATIVE')
+        ])
+
+        // Wait for all token fetches to complete
+        const allTokenResults = await Promise.all(tokenPromises)
+
+        // Process and combine all tokens
+        this.tokens = allTokenResults.flatMap((tokens, index) => {
+          const walletIndex = Math.floor(index / 3) // Determine which wallet these tokens belong to
+          const wallet = linkedWalletsData.data[walletIndex]
+          const tokenType = ['ERC-20', 'CW-20', 'NATIVE'][index % 3]
+          const walletAddress = tokenType === 'ERC-20' ? wallet.evm_hash : wallet.sei_hash
+
+          return tokens.map(t => ({
+            ...t.token,
+            value: t.value,
+            type: tokenType,
+            walletAddress: walletAddress,
+            walletLabel: this.internalWalletLabels[walletAddress] || this.truncateAddress(walletAddress)
+          }))
+        })
 
         // Fetch NFTs for each wallet
         const walletsWithNfts = await Promise.all(
