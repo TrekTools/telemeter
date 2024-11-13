@@ -46,6 +46,15 @@
     <p v-if="evmAddress" class="wallet-address">
       EVM Address: {{ truncateAddress(evmAddress) }}
     </p>
+
+    <div class="status-container">
+      <p v-if="nftStatus" class="nft-status">
+        {{ nftStatus }}
+        <span v-if="warpBoisCount > 0" class="nft-count">Warp Bois: {{ warpBoisCount }}</span>
+        <span v-if="tacCount > 0" class="nft-count">TACs: {{ tacCount }}</span>
+      </p>
+    </div>
+
     <HomeCharts />
 
     <h1>welcome to Telemeter v0.1 (Beta)</h1>
