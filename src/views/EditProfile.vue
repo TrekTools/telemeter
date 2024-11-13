@@ -18,6 +18,13 @@
           <select v-model="selectedChain" class="chain-select">
             <option value="sei">Sei</option>
           </select>
+          <button 
+            @click="handleAddWallets"
+            class="add-wallet-btn"
+            :disabled="!walletInput.trim() || loading"
+          >
+            {{ addButtonText }}
+          </button>
         </div>
         <span v-if="inputError" class="error-message">{{ inputError }}</span>
       </div>
@@ -105,7 +112,9 @@ export default {
       selectedChain: 'sei',
       inputError: null,
       linkedWallets: [],
-      toast: null
+      toast: null,
+      loading: false,
+      addButtonText: 'Add Wallets'
     }
   },
   async created() {
@@ -350,6 +359,25 @@ export default {
     },
     clearNFTAnalysisCache() {
       sessionStorage.removeItem('nftAnalysisCache')
+    },
+    async handleAddWallets() {
+      this.loading = true
+      this.addButtonText = '⌛'
+      
+      try {
+        await this.validateAndFetchAddress()
+        this.addButtonText = '✓'
+        setTimeout(() => {
+          this.addButtonText = 'Add Wallets'
+        }, 2000)
+      } catch (error) {
+        this.addButtonText = '✗'
+        setTimeout(() => {
+          this.addButtonText = 'Add Wallets'
+        }, 2000)
+      } finally {
+        this.loading = false
+      }
     }
   }
 }
@@ -410,13 +438,25 @@ export default {
 }
 
 .add-wallet-btn {
-  padding: 8px 12px;
+  padding: 8px 16px;
   border: 1px solid #42b983;
   background-color: #1a1a1a;
   color: #42b983;
   border-radius: 4px;
   cursor: pointer;
   font-family: 'Source Code Pro', monospace;
+  min-width: 100px;
+  transition: all 0.3s ease;
+}
+
+.add-wallet-btn:hover:not(:disabled) {
+  background-color: #42b983;
+  color: #1a1a1a;
+}
+
+.add-wallet-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .access-denied {
