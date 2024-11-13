@@ -83,4 +83,44 @@ export default {
   font-weight: bold;
   color: white;
 }
+
+.value-tiles {
+  display: flex;
+  gap: 20px;
+  margin: 20px;
+  flex-wrap: wrap;
+}
+
+.value-tile {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 12px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.tile-label {
+  color: #999;
+  font-size: 0.9em;
+  margin-bottom: 8px;
+}
+
+.tile-value {
+  color: #42b983;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .value-tiles {
+    flex-direction: column;
+    margin: 10px;
+  }
+
+  .value-tile {
+    width: 100%;
+    min-width: unset;
+    margin-bottom: 10px;
+  }
+}
 </style> 
