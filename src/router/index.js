@@ -8,6 +8,7 @@ import TelemeterGuide from '../views/TelemeterGuide.vue'
 import AboutPage from '../views/AboutPage.vue'
 import TrendAnalysis from '../views/TrendAnalysis.vue'
 import WarpToken from '@/views/WarpToken.vue'
+import { trackPageView } from '../analytics'
 
 let appInstance = null
 
@@ -113,6 +114,10 @@ router.beforeEach((to, from, next) => {
   } else {
     next()
   }
+})
+
+router.afterEach((to) => {
+  trackPageView(to.path)
 })
 
 export default router 
