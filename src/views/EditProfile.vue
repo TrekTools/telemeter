@@ -2,15 +2,18 @@
   <div v-if="hasRequiredNFT" class="edit-profile">
     <h1>Edit Profile</h1>
     
-    <div class="wallet-manager">
+    <!-- Collapsible Wallet Manager -->
+    <div class="section-header" @click="toggleWalletManager">
       <h2>Manage Wallets</h2>
-      
+      <span class="toggle-icon">{{ isWalletManagerOpen ? '▼' : '▶' }}</span>
+    </div>
+    
+    <div class="wallet-manager" v-show="isWalletManagerOpen">
       <div class="wallet-input-group">
         <div class="wallet-row">
           <input 
             type="text" 
             v-model="walletInput"
-            @blur="validateAndFetchAddress"
             placeholder="Enter wallet address (or multiple separated by commas)"
             class="wallet-input"
             :class="{ 'error': inputError }"
@@ -81,6 +84,34 @@
         </table>
       </div>
     </div>
+
+    <!-- Collapsible Social Links -->
+    <div class="section-header" @click="toggleSocialManager">
+      <h2>Connect Social Accounts</h2>
+      <span class="toggle-icon">{{ isSocialManagerOpen ? '▼' : '▶' }}</span>
+    </div>
+    
+    <div class="social-manager" v-show="isSocialManagerOpen">
+      <div class="social-buttons">
+        <button 
+          class="social-btn discord disabled"
+          disabled
+        >
+          <i class="fab fa-discord"></i>
+          Connect Discord
+          <span class="coming-soon-badge">Coming Soon</span>
+        </button>
+
+        <button 
+          class="social-btn twitter disabled"
+          disabled
+        >
+          <i class="fab fa-twitter"></i>
+          Connect Twitter
+          <span class="coming-soon-badge">Coming Soon</span>
+        </button>
+      </div>
+    </div>
   </div>
   <div v-else class="access-denied">
     <h2>Access Denied</h2>
@@ -114,16 +145,31 @@ export default {
       linkedWallets: [],
       toast: null,
       loading: false,
-      addButtonText: 'Add Wallets'
+      addButtonText: 'Add Wallets',
+      discordConnected: false,
+      twitterConnected: false,
+      discordUsername: '',
+      twitterHandle: '',
+      discordError: null,
+      twitterError: null,
+      isWalletManagerOpen: true,
+      isSocialManagerOpen: true
     }
   },
   async created() {
     await this.loadLinkedWallets()
     await this.checkAndAddControlWallet()
+    await this.loadSocialConnections()
   },
   computed: {
     hasRequiredNFT() {
       return this.warpBoisCount > 0 || this.tacCount > 0;
+    },
+    isValidDiscord() {
+      return this.discordUsername && /^.{3,32}#[0-9]{4}$/.test(this.discordUsername)
+    },
+    isValidTwitter() {
+      return this.twitterHandle && /^@?(\w){1,15}$/.test(this.twitterHandle)
     }
   },
   methods: {
@@ -361,6 +407,8 @@ export default {
       sessionStorage.removeItem('nftAnalysisCache')
     },
     async handleAddWallets() {
+      if (!this.walletInput.trim()) return
+      
       this.loading = true
       this.addButtonText = '⌛'
       
@@ -378,6 +426,77 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    async loadSocialConnections() {
+      try {
+        const { data, error } = await supabase
+          .from('linked_wallets')
+          .select('discord_username, twitter_handle')
+          .eq('control_sei_hash', this.walletAddress)
+          .single()
+
+        if (error) throw error
+
+        if (data) {
+          this.discordConnected = !!data.discord_username
+          this.twitterConnected = !!data.twitter_handle
+          this.discordUsername = data.discord_username || ''
+          this.twitterHandle = data.twitter_handle || ''
+        }
+      } catch (error) {
+        console.error('Error loading social connections:', error)
+      }
+    },
+    connectDiscord() {
+      // Discord OAuth URL with your client ID
+      const DISCORD_CLIENT_ID = process.env.VUE_APP_DISCORD_CLIENT_ID
+      const redirectUri = encodeURIComponent(`${window.location.origin}/auth/discord/callback`)
+      const scope = 'identify'
+      
+      window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`
+    },
+
+    connectTwitter() {
+      // Twitter OAuth URL
+      const TWITTER_CLIENT_ID = process.env.VUE_APP_TWITTER_CLIENT_ID
+      const redirectUri = encodeURIComponent(`${window.location.origin}/auth/twitter/callback`)
+      const scope = 'users.read'
+      
+      window.location.href = `https://twitter.com/i/oauth2/authorize?client_id=${TWITTER_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`
+    },
+
+    async disconnectSocial(platform) {
+      try {
+        const updateData = {}
+        if (platform === 'discord') {
+          updateData.discord_id = null
+          updateData.discord_username = null
+          this.discordConnected = false
+          this.discordUsername = ''
+        } else if (platform === 'twitter') {
+          updateData.twitter_id = null
+          updateData.twitter_handle = null
+          this.twitterConnected = false
+          this.twitterHandle = ''
+        }
+
+        const { error } = await supabase
+          .from('linked_wallets')
+          .update(updateData)
+          .eq('control_sei_hash', this.walletAddress)
+
+        if (error) throw error
+
+        this.showToast(`${platform} account disconnected`)
+      } catch (error) {
+        console.error(`Error disconnecting ${platform}:`, error)
+      }
+    },
+    toggleWalletManager() {
+      this.isWalletManagerOpen = !this.isWalletManagerOpen
+    },
+    toggleSocialManager() {
+      this.isSocialManagerOpen = !this.isSocialManagerOpen
     }
   }
 }
@@ -594,5 +713,136 @@ td {
   color: #666;
   font-size: 0.8em;
   font-style: italic;
+}
+
+.social-manager {
+  background-color: #2c2c2c;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.social-buttons {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.social-btn i {
+  font-size: 1.2em;
+}
+
+.social-btn.discord {
+  background-color: #5865F2;
+}
+
+.social-btn.twitter {
+  background-color: #1DA1F2;
+}
+
+.social-btn.discord:hover {
+  background-color: #4752c4;
+}
+
+.social-btn.twitter:hover {
+  background-color: #1a8cd8;
+}
+
+.social-btn.connected {
+  background-color: #42b983;
+}
+
+.connected-accounts {
+  margin-top: 30px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.account-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.disconnect-btn {
+  margin-left: auto;
+  padding: 6px 12px;
+  border: 1px solid #ff4444;
+  background: transparent;
+  color: #ff4444;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.disconnect-btn:hover {
+  background: #ff4444;
+  color: white;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  background-color: #2c2c2c;
+  border-radius: 8px;
+  margin-top: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.section-header:hover {
+  background-color: #363636;
+}
+
+.toggle-icon {
+  color: #42b983;
+  font-size: 0.8em;
+}
+
+.social-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  position: relative;
+  overflow: hidden;
+}
+
+.coming-soon-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.social-btn.disabled:hover .coming-soon-badge {
+  display: block;
+}
+
+.wallet-manager, .social-manager {
+  transition: all 0.3s ease;
 }
 </style> 
