@@ -445,6 +445,7 @@ export default {
   background: rgba(255, 255, 255, 0.1);
   text-align: center;
   font-weight: bold;
+  color: var(--primary-text);
 }
 
 .text-center {
@@ -469,7 +470,7 @@ export default {
 }
 
 .positive-change {
-  color: #42b983;
+  color: var(--accent-text);
   font-weight: bold;
 }
 

@@ -1,7 +1,7 @@
 <template>
   <div class="charts-container">
     <div class="chart-wrapper">
-      <h3>Warp Bois</h3>
+      <h3 class="chart-title">Warp Bois</h3>
       <div class="chart">
         <Line 
           v-if="chartData.warpFloor" 
@@ -11,7 +11,7 @@
       </div>
     </div>
     <div class="chart-wrapper">
-      <h3>TAC</h3>
+      <h3 class="chart-title">TAC</h3>
       <div class="chart">
         <Line 
           v-if="chartData.tacFloor" 
@@ -191,8 +191,8 @@ export default {
   height: 300px;
 }
 
-h3 {
-  color: #42b983;
+.chart-title {
+  color: var(--primary-text);
   margin-bottom: 20px;
   text-align: center;
 }

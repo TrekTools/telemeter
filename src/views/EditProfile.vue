@@ -2,6 +2,19 @@
   <div v-if="hasRequiredNFT" class="edit-profile">
     <h1>Edit Profile</h1>
     
+    <div class="theme-selector">
+      <button 
+        v-for="color in themeColors" 
+        :key="color.name"
+        @click="setTheme(color.value)"
+        class="theme-btn"
+        :class="{ active: currentTheme === color.value }"
+        :style="{ backgroundColor: color.value }"
+      >
+        {{ color.name }}
+      </button>
+    </div>
+    
     <!-- Collapsible Wallet Manager -->
     <div class="section-header" @click="toggleWalletManager">
       <h2>Manage Wallets</h2>
@@ -153,7 +166,15 @@ export default {
       discordError: null,
       twitterError: null,
       isWalletManagerOpen: true,
-      isSocialManagerOpen: true
+      isSocialManagerOpen: true,
+      currentTheme: 'theme-green', // Default green
+      themeColors: [
+        { name: 'Green', value: 'green' },
+        { name: 'Red', value: 'red' },
+        { name: 'Cyan', value: 'cyan' },
+        { name: 'Gold', value: 'gold' },
+        { name: 'White', value: 'white' }
+      ]
     }
   },
   async created() {
@@ -497,12 +518,32 @@ export default {
     },
     toggleSocialManager() {
       this.isSocialManagerOpen = !this.isSocialManagerOpen
+    },
+    setTheme(color) {
+      // Dispatch theme change event
+      window.dispatchEvent(new CustomEvent('themeChanged', { 
+        detail: color 
+      }))
+      
+      // Store theme preference (optional)
+      localStorage.setItem('preferred-theme', color)
+    }
+  },
+  mounted() {
+    // Load saved theme preference (optional)
+    const savedTheme = localStorage.getItem('preferred-theme')
+    if (savedTheme) {
+      this.setTheme(savedTheme)
     }
   }
 }
 </script>
 
 <style scoped>
+:root {
+  --theme-color: #42b983;
+}
+
 .edit-profile {
   padding: 20px;
   max-width: 800px;
@@ -529,7 +570,7 @@ export default {
 .wallet-input {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #42b983;
+  border: 1px solid var(--theme-color);
   background-color: #1a1a1a;
   color: #ffffff;
   border-radius: 4px;
@@ -538,7 +579,7 @@ export default {
 
 .chain-select {
   padding: 8px 12px;
-  border: 1px solid #42b983;
+  border: 1px solid var(--theme-color);
   background-color: #1a1a1a;
   color: #ffffff;
   border-radius: 4px;
@@ -558,9 +599,9 @@ export default {
 
 .add-wallet-btn {
   padding: 8px 16px;
-  border: 1px solid #42b983;
+  border: 1px solid var(--theme-color);
   background-color: #1a1a1a;
-  color: #42b983;
+  color: var(--theme-color);
   border-radius: 4px;
   cursor: pointer;
   font-family: 'Source Code Pro', monospace;
@@ -569,8 +610,7 @@ export default {
 }
 
 .add-wallet-btn:hover:not(:disabled) {
-  background-color: #42b983;
-  color: #1a1a1a;
+  background-color: var(--theme-color);
 }
 
 .add-wallet-btn:disabled {
@@ -617,14 +657,14 @@ th, td {
 }
 
 th {
-  color: #42b983;
+  color: var(--theme-color);
   font-weight: normal;
 }
 
 .label-input {
   background: transparent;
   border: none;
-  border-bottom: 1px solid #42b983;
+  border-bottom: 1px solid var(--theme-color);
   color: #ffffff;
   padding: 4px 8px;
   font-family: 'Source Code Pro', monospace;
@@ -638,7 +678,7 @@ th {
 
 .label-input:focus {
   outline: none;
-  border-bottom: 2px solid #42b983;
+  border-bottom: 2px solid var(--theme-color);
 }
 
 .label-input::placeholder {
@@ -652,7 +692,7 @@ th {
 }
 
 .save-btn {
-  background: #42b983;
+  background: var(--theme-color);
   color: #1a1a1a;
   border: none;
   border-radius: 4px;
@@ -668,7 +708,7 @@ th {
 }
 
 .save-btn:hover:not(:disabled) {
-  background: #3aa876;
+  background: color-mix(in srgb, var(--theme-color) 90%, black);
 }
 
 .delete-btn {
@@ -694,7 +734,7 @@ td {
   position: fixed;
   top: 20px;
   right: 20px;
-  background-color: #42b983;
+  background-color: var(--theme-color);
   color: #1a1a1a;
   padding: 12px 24px;
   border-radius: 4px;
@@ -762,7 +802,7 @@ td {
 }
 
 .social-btn.connected {
-  background-color: #42b983;
+  background-color: var(--theme-color);
 }
 
 .connected-accounts {
@@ -815,7 +855,7 @@ td {
 }
 
 .toggle-icon {
-  color: #42b983;
+  color: var(--theme-color);
   font-size: 0.8em;
 }
 
@@ -844,5 +884,34 @@ td {
 
 .wallet-manager, .social-manager {
   transition: all 0.3s ease;
+}
+
+.theme-selector {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.theme-btn {
+  padding: 8px 16px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #1a1a1a;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.theme-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.theme-btn.active {
+  border-color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 </style> 

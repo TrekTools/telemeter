@@ -1,86 +1,88 @@
 <template>
-  <router-view 
-    :wallet-connected="isConnected"
-    :wallet-address="walletAddress"
-    :evm-address="evmAddress"
-    :warp-bois-count="warpBoisCount"
-    :tac-count="tacCount"
-    :nft-status="nftStatus"
-    @connect-wallet="handleConnect"
-    @disconnect-wallet="disconnectWallet"
-    @check-nfts="handleNFTCheck"
-  ></router-view>
-  
-  <!-- Add CommandToast with all required props -->
-  <CommandToast 
-    :wallet-connected="isConnected"
-    :wallet-address="walletAddress"
-    :evm-address="evmAddress"
-    :warp-bois-count="warpBoisCount"
-    :tac-count="tacCount"
-    @connect-wallet="handleConnect"
-    @disconnect-wallet="disconnectWallet"
-    @terminal-hidden="handleTerminalHidden"
-    ref="commandToast"
-  />
+  <div id="app" :class="currentTheme">
+    <router-view 
+      :wallet-connected="isConnected"
+      :wallet-address="walletAddress"
+      :evm-address="evmAddress"
+      :warp-bois-count="warpBoisCount"
+      :tac-count="tacCount"
+      :nft-status="nftStatus"
+      @connect-wallet="handleConnect"
+      @disconnect-wallet="disconnectWallet"
+      @check-nfts="handleNFTCheck"
+    ></router-view>
+    
+    <!-- Add CommandToast with all required props -->
+    <CommandToast 
+      :wallet-connected="isConnected"
+      :wallet-address="walletAddress"
+      :evm-address="evmAddress"
+      :warp-bois-count="warpBoisCount"
+      :tac-count="tacCount"
+      @connect-wallet="handleConnect"
+      @disconnect-wallet="disconnectWallet"
+      @terminal-hidden="handleTerminalHidden"
+      ref="commandToast"
+    />
 
-  <NftConveyor 
-    :wallet-connected="isConnected"
-    :wallet-address="walletAddress"
-    :warp-bois-count="warpBoisCount"
-    :tac-count="tacCount"
-  />
-  
-  <div class="nav-container">
-    <!-- Desktop Navigation -->
-    <nav class="bottom-toolbar" v-show="!isMobile">
-      <router-link to="/" class="nav-link">Home</router-link>
-      <router-link to="/about" class="nav-link">About</router-link>
-      <router-link to="/guide" class="nav-link">Guide</router-link>
-      
-      <!-- Add terminal indicator -->
-      <div v-if="terminalHidden" 
-           class="terminal-indicator" 
-           @click="showTerminal">
-        <span class="terminal-dot"></span>
-        Terminal
-      </div>
-
-      <!-- Protected routes only shown when NFTs are owned -->
-      <template v-if="warpBoisCount > 0 || tacCount > 0">
-        <router-link to="/portfolio" class="nav-link">Portfolio</router-link>
-        <router-link to="/coins" class="nav-link">Coins</router-link>
-        <router-link to="/nft" class="nav-link">NFT Analysis</router-link>
-        <router-link to="/trends" class="nav-link">Market Trends</router-link>
-        <router-link to="/profile" class="nav-link">Profile</router-link>
-        <router-link to="/warp" class="nav-link">$WARP</router-link>
-      </template>
-    </nav>
-
-    <!-- Mobile Navigation with Drawer -->
-    <nav class="mobile-toolbar" v-show="isMobile">
-      <button class="drawer-toggle" @click="isDrawerOpen = !isDrawerOpen">
-        <span class="menu-icon">☰</span>
-      </button>
-      
-      <div class="drawer" :class="{ 'drawer-open': isDrawerOpen }">
-        <div class="drawer-content">
-          <router-link to="/" class="drawer-link" @click="closeDrawer">Home</router-link>
-          <router-link to="/about" class="drawer-link" @click="closeDrawer">About</router-link>
-          <router-link to="/guide" class="drawer-link" @click="closeDrawer">Guide</router-link>
-          
-          <!-- Protected routes in drawer -->
-          <template v-if="warpBoisCount > 0 || tacCount > 0">
-            <router-link to="/portfolio" class="drawer-link" @click="closeDrawer">Portfolio</router-link>
-            <router-link to="/coins" class="drawer-link" @click="closeDrawer">Coins</router-link>
-            <router-link to="/nft" class="drawer-link" @click="closeDrawer">NFT Analysis</router-link>
-            <router-link to="/trends" class="drawer-link" @click="closeDrawer">Market Trends</router-link>
-            <router-link to="/profile" class="drawer-link" @click="closeDrawer">Profile</router-link>
-            <router-link to="/warp" class="drawer-link" @click="closeDrawer">$WARP</router-link>
-          </template>
+    <NftConveyor 
+      :wallet-connected="isConnected"
+      :wallet-address="walletAddress"
+      :warp-bois-count="warpBoisCount"
+      :tac-count="tacCount"
+    />
+    
+    <div class="nav-container">
+      <!-- Desktop Navigation -->
+      <nav class="bottom-toolbar" v-show="!isMobile">
+        <router-link to="/" class="nav-link">Home</router-link>
+        <router-link to="/about" class="nav-link">About</router-link>
+        <router-link to="/guide" class="nav-link">Guide</router-link>
+        
+        <!-- Add terminal indicator -->
+        <div v-if="terminalHidden" 
+             class="terminal-indicator" 
+             @click="showTerminal">
+          <span class="terminal-dot"></span>
+          Terminal
         </div>
-      </div>
-    </nav>
+
+        <!-- Protected routes only shown when NFTs are owned -->
+        <template v-if="warpBoisCount > 0 || tacCount > 0">
+          <router-link to="/portfolio" class="nav-link">Portfolio</router-link>
+          <router-link to="/coins" class="nav-link">Coins</router-link>
+          <router-link to="/nft" class="nav-link">NFT Analysis</router-link>
+          <router-link to="/trends" class="nav-link">Market Trends</router-link>
+          <router-link to="/profile" class="nav-link">Profile</router-link>
+          <router-link to="/warp" class="nav-link">$WARP</router-link>
+        </template>
+      </nav>
+
+      <!-- Mobile Navigation with Drawer -->
+      <nav class="mobile-toolbar" v-show="isMobile">
+        <button class="drawer-toggle" @click="isDrawerOpen = !isDrawerOpen">
+          <span class="menu-icon">☰</span>
+        </button>
+        
+        <div class="drawer" :class="{ 'drawer-open': isDrawerOpen }">
+          <div class="drawer-content">
+            <router-link to="/" class="drawer-link" @click="closeDrawer">Home</router-link>
+            <router-link to="/about" class="drawer-link" @click="closeDrawer">About</router-link>
+            <router-link to="/guide" class="drawer-link" @click="closeDrawer">Guide</router-link>
+            
+            <!-- Protected routes in drawer -->
+            <template v-if="warpBoisCount > 0 || tacCount > 0">
+              <router-link to="/portfolio" class="drawer-link" @click="closeDrawer">Portfolio</router-link>
+              <router-link to="/coins" class="drawer-link" @click="closeDrawer">Coins</router-link>
+              <router-link to="/nft" class="drawer-link" @click="closeDrawer">NFT Analysis</router-link>
+              <router-link to="/trends" class="drawer-link" @click="closeDrawer">Market Trends</router-link>
+              <router-link to="/profile" class="drawer-link" @click="closeDrawer">Profile</router-link>
+              <router-link to="/warp" class="drawer-link" @click="closeDrawer">$WARP</router-link>
+            </template>
+          </div>
+        </div>
+      </nav>
+    </div>
   </div>
 </template>
 
@@ -112,12 +114,17 @@ export default {
       terminalHidden: false,
       nftAnalysisData: {
         linkedWallets: []
-      }
+      },
+      currentTheme: 'theme-green' // default theme
     }
   },
   created() {
     this.checkMobile()
     window.addEventListener('resize', this.checkMobile)
+    // Listen for theme changes
+    window.addEventListener('themeChanged', (e) => {
+      this.currentTheme = `theme-${e.detail}`
+    })
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.checkMobile)
@@ -287,6 +294,95 @@ export default {
 </script>
 
 <style>
+:root {
+  /* Default theme (green) */
+  --primary-text: #42b983;
+  --secondary-text: #34495e;
+  --accent-text: #42b983;
+  --negative-text: #ff4444;  /* For price decreases */
+}
+
+/* Theme variations */
+.theme-green {
+  --primary-text: #42b983;
+  --secondary-text: #34495e;
+  --accent-text: #42b983;
+  --negative-text: #ff4444;
+}
+
+.theme-red {
+  --primary-text: #ff7070;
+  --secondary-text: #ff9999;
+  --accent-text: #ff7070;
+  --negative-text: #ff4444;
+}
+
+.theme-cyan {
+  --primary-text: #70d7ff;
+  --secondary-text: #99e6ff;
+  --accent-text: #70d7ff;
+  --negative-text: #ff4444;
+}
+
+.theme-gold {
+  --primary-text: #ffd700;
+  --secondary-text: #ffeb99;
+  --accent-text: #ffd700;
+  --negative-text: #ff4444;
+}
+
+.theme-white {
+  --primary-text: #ffffff;
+  --secondary-text: #dddddd;
+  --accent-text: #ffffff;
+  --negative-text: #ff4444;
+}
+
+/* Global text styles */
+h1, h2, h3, h4, h5, h6,
+.title, .subtitle,
+th, td,
+label,
+.chart-title,
+.legend-item,
+.token-count,
+.chart-label,
+.axis-label,
+.tooltip-text,
+button:not(.theme-btn),
+.toggle-btn,
+.section-header,
+.prompt,
+.command,
+.response,
+.highlight,
+.requirement,
+.debug-info,
+.token-table th {
+  color: var(--primary-text);
+}
+
+/* Chart.js customization */
+.chartjs-render-monitor text,
+.chartjs-axis-label,
+.chartjs-legend-item-text {
+  color: var(--primary-text) !important;
+}
+
+/* Price changes */
+.positive-change {
+  color: var(--accent-text) !important;
+}
+
+.negative-change {
+  color: var(--negative-text) !important;
+}
+
+/* Keep theme buttons with their own colors */
+.theme-btn {
+  color: #1a1a1a !important;
+}
+
 #app {
   font-family: 'Source Code Pro', monospace;
   -webkit-font-smoothing: antialiased;

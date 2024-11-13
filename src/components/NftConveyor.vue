@@ -186,7 +186,7 @@ export default {
 
 .nft-name {
   font-size: 0.8em;
-  color: #42b983;
+  color: var(--primary-text);
   margin-top: 4px;
 }
 
