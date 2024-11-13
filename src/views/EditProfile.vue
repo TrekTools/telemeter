@@ -60,20 +60,25 @@
           <tbody>
             <tr v-for="wallet in linkedWallets" :key="wallet.uuid">
               <td class="label-cell">
-                <input 
-                  type="text" 
-                  v-model="wallet.label"
-                  class="label-input"
-                  :placeholder="wallet.sei_hash === walletAddress ? 'Primary Wallet' : 'Add label'"
-                >
-                <button 
-                  @click="(event) => updateWalletLabel(wallet, event)"
-                  class="save-btn"
-                  :disabled="!isValidLabel(wallet.label)"
-                  :title="!isValidLabel(wallet.label) ? 'Label cannot contain semi-colons' : ''"
-                >
-                  Save
-                </button>
+                <div class="label-input-group">
+                  <input 
+                    type="text" 
+                    v-model="wallet.label"
+                    class="label-input"
+                    :placeholder="wallet.sei_hash === walletAddress ? 'Primary Wallet' : 'Add label'"
+                  />
+                  <button 
+                    @click="updateWalletLabel(wallet)"
+                    class="save-btn"
+                    :class="{
+                      'inactive': !wallet.label?.trim(),
+                      'success': wallet.saveSuccess
+                    }"
+                    :disabled="!wallet.label?.trim()"
+                  >
+                    {{ wallet.saveSuccess ? '✓' : 'Save' }}
+                  </button>
+                </div>
               </td>
               <td>{{ truncateAddress(wallet.sei_hash) }}</td>
               <td>{{ truncateAddress(wallet.evm_hash) }}</td>
@@ -254,7 +259,10 @@ export default {
           return
         }
 
-        this.linkedWallets = data || []
+        this.linkedWallets = data.map(wallet => ({
+          ...wallet,
+          saveSuccess: false
+        }))
       } catch (error) {
         console.error('Error in loadLinkedWallets:', error)
       }
@@ -389,33 +397,29 @@ export default {
     isValidLabel(label) {
       return label && !label.includes(';')
     },
-    async updateWalletLabel(wallet, event) {
-      if (!this.isValidLabel(wallet.label)) {
-        this.inputError = 'Label cannot contain semi-colons'
-        return
-      }
+    async updateWalletLabel(wallet) {
+      if (!wallet.label?.trim()) return
 
       try {
         const { error } = await supabase
           .from('linked_wallets')
           .update({ label: wallet.label.trim() })
-          .match({ uuid: wallet.uuid })
-          .eq('control_sei_hash', this.walletAddress)
+          .eq('uuid', wallet.uuid)
 
         if (error) throw error
 
-        // Show success feedback on button
-        const btn = event.target
-        btn.textContent = '✓'
+        // Show success state
+        wallet.saveSuccess = true
+        
+        // Reset success state after 2 seconds
         setTimeout(() => {
-          btn.textContent = 'Save'
-        }, 1000)
+          wallet.saveSuccess = false
+        }, 2000)
 
-        // Show toast message
-        this.showToast('Label updated')
       } catch (error) {
-        console.error('Error updating wallet label:', error)
-        this.inputError = 'Error saving label'
+        console.error('Error updating label:', error)
+        // Optionally show error toast
+        this.showToast('Failed to update label')
       }
     },
     showToast(message) {
@@ -661,54 +665,66 @@ th {
   font-weight: normal;
 }
 
-.label-input {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--theme-color);
-  color: #ffffff;
-  padding: 4px 8px;
-  font-family: 'Source Code Pro', monospace;
-  width: 150px;
-}
-
-.label-input:disabled {
-  border-bottom: 1px solid #666;
-  color: #666;
-}
-
-.label-input:focus {
-  outline: none;
-  border-bottom: 2px solid var(--theme-color);
-}
-
-.label-input::placeholder {
-  color: #666;
-}
-
-.label-cell {
+.label-input-group {
   display: flex;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
+  width: 100%;
+  position: relative;
 }
 
 .save-btn {
-  background: var(--theme-color);
+  position: relative;
+  flex-shrink: 0;
+  background: green;
   color: #1a1a1a;
   border: none;
   border-radius: 4px;
   padding: 4px 8px;
   cursor: pointer;
   font-size: 0.8em;
+  height: 24px;
+  min-width: 50px;
+  margin-left: 8px;
   transition: all 0.3s ease;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
 }
 
-.save-btn:disabled {
-  background: #666;
+.save-btn.inactive {
+  background: #666666 !important;
   cursor: not-allowed;
+  opacity: 1 !important;
 }
 
-.save-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--theme-color) 90%, black);
+.save-btn.success {
+  background: #42b983 !important;
+  opacity: 1 !important;
+}
+
+.save-btn:not(.inactive):hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.label-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.label-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--theme-color);
+  color: #ffffff;
+  padding: 4px 8px;
+  font-family: 'Source Code Pro', monospace;
+  min-width: 120px;
 }
 
 .delete-btn {
