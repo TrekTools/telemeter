@@ -1,5 +1,12 @@
 <template>
   <div class="home">
+    <NftConveyor
+      :is-connected="walletConnected"
+      :wallet-address="walletAddress"
+      :warp-bois-count="warpBoisCount"
+      :tac-count="tacCount"
+    />
+    
     <div class="terminal-header">
       <div class="terminal-bar">
         <span class="terminal-buttons">
@@ -74,11 +81,13 @@
 
 <script>
 import HomeCharts from '@/components/HomeCharts.vue'
+import NftConveyor from '@/components/NftConveyor.vue'
 
 export default {
   name: 'HomeView',
   components: {
-    HomeCharts
+    HomeCharts,
+    NftConveyor
   },
   props: {
     walletConnected: {
@@ -117,6 +126,7 @@ export default {
 <style scoped>
 .home {
   padding: 20px;
+  padding-top: 100px;
   max-width: 1200px;
   margin: 0 auto;
 }
