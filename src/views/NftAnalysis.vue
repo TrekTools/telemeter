@@ -1,6 +1,6 @@
 <template>
   <div v-if="hasRequiredNFT" class="nft-analysis" ref="nftAnalysis">
-    <h1>NFT Analysis</h1>
+    <h1>NFTs</h1>
     
     <div class="view-controls">
       <button 

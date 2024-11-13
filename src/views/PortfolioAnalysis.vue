@@ -1,6 +1,6 @@
 <template>
   <div v-if="hasRequiredNFT" class="portfolio-analysis">
-    <h1>Portfolio Analysis</h1>
+    <h1>Portfolio</h1>
     
     <ValueSummaryTiles 
       :token-value="totalTokenValue"

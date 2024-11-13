@@ -1,6 +1,6 @@
 <template>
   <div v-if="hasRequiredNFT" class="trend-analysis">
-    <h1>Trend Analysis</h1>
+    <h1>Market Trend Analysis</h1>
     <div class="coming-soon">
       <p>Trend analysis tools are coming soon!</p>
       <img 

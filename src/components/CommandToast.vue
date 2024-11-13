@@ -541,7 +541,6 @@ export default {
           port - Go to portfolio (requires NFT)
           nfts - Go to NFT analysis (requires NFT)
           coins - Go to coins page (requires NFT)
-          nft - Go to NFT analysis (requires NFT)
           trends - Go to market trends (requires NFT)
           prof - Go to profile (requires NFT)
           
