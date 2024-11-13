@@ -178,21 +178,75 @@ export default {
       }
     },
     async handleNFTCheck() {
+      console.log('Starting NFT check for wallet:', this.walletAddress)
+      
+      if (!this.walletAddress) {
+        console.error('No wallet address available for NFT check')
+        return
+      }
+
       try {
-        const WARP_BOIS_CONTRACT = "sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm";
-        const TAC_CONTRACT = "sei14cvgwjct3rcds3xzvem6eweaehe0vd3trjjpaz6zxzgse7yx890q8w8jam";
+        const WARP_BOIS_CONTRACT = "sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm"
+        const TAC_CONTRACT = "sei14cvgwjct3rcds3xzvem6eweaehe0vd3trjjpaz6zxzgse7yx890q8w8jam"
         
-        const response = await fetch(`https://rest.sei-apis.com/cosmwasm/wasm/v1/contract/${WARP_BOIS_CONTRACT}/smart/${Buffer.from(JSON.stringify({tokens: {owner: this.walletAddress}})).toString('base64')}`);
-        const data = await response.json();
-        this.warpBoisCount = data.data.tokens.length;
-        
-        const tacResponse = await fetch(`https://rest.sei-apis.com/cosmwasm/wasm/v1/contract/${TAC_CONTRACT}/smart/${Buffer.from(JSON.stringify({tokens: {owner: this.walletAddress}})).toString('base64')}`);
-        const tacData = await tacResponse.json();
-        this.tacCount = tacData.data.tokens.length;
-        
-        this.nftStatus = this.warpBoisCount > 0 || this.tacCount > 0 ? "Warp Boi holder! 👾" : null;
+        // Add retry logic for mobile
+        const fetchWithRetry = async (url, retries = 3) => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              const response = await fetch(url)
+              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+              const data = await response.json()
+              return data
+            } catch (error) {
+              console.error(`Attempt ${i + 1} failed:`, error)
+              if (i === retries - 1) throw error
+              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))) // Exponential backoff
+            }
+          }
+        }
+
+        // Query for Warp Bois
+        const query = Buffer.from(JSON.stringify({
+          tokens: { owner: this.walletAddress }
+        })).toString('base64')
+
+        const warpUrl = `https://rest.sei-apis.com/cosmwasm/wasm/v1/contract/${WARP_BOIS_CONTRACT}/smart/${query}`
+        const tacUrl = `https://rest.sei-apis.com/cosmwasm/wasm/v1/contract/${TAC_CONTRACT}/smart/${query}`
+
+        // Fetch both NFT counts in parallel with retry logic
+        const [warpData, tacData] = await Promise.all([
+          fetchWithRetry(warpUrl),
+          fetchWithRetry(tacUrl)
+        ])
+
+        // Update counts with explicit number conversion
+        this.warpBoisCount = warpData?.data?.tokens?.length || 0
+        this.tacCount = tacData?.data?.tokens?.length || 0
+
+        console.log('NFT Check Results:', {
+          wallet: this.walletAddress,
+          warpBoisCount: this.warpBoisCount,
+          tacCount: this.tacCount,
+          isMobile: this.isMobile
+        })
+
+        // Update NFT status
+        this.nftStatus = this.warpBoisCount > 0 || this.tacCount > 0 
+          ? "Warp Boi holder! 👾" 
+          : null
+
+        // Force a reactive update
+        this.$nextTick(() => {
+          this.warpBoisCount = Number(this.warpBoisCount)
+          this.tacCount = Number(this.tacCount)
+        })
+
       } catch (error) {
-        console.error("Error checking NFTs:", error);
+        console.error("Error in handleNFTCheck:", error)
+        // Reset counts on error to prevent stale data
+        this.warpBoisCount = 0
+        this.tacCount = 0
+        this.nftStatus = null
       }
     },
     async logUserLogin() {
@@ -233,7 +287,15 @@ export default {
       }
     },
     checkMobile() {
+      const wasMobile = this.isMobile
       this.isMobile = window.innerWidth <= 768
+      
+      // If switching from mobile to desktop or vice versa, recheck NFTs
+      if (wasMobile !== this.isMobile && this.isConnected) {
+        console.log('Device type changed, rechecking NFTs...')
+        this.handleNFTCheck()
+      }
+
       if (!this.isMobile) {
         this.isDrawerOpen = false
       }
