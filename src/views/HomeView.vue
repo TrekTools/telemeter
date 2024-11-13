@@ -46,11 +46,29 @@
     <p v-if="evmAddress" class="wallet-address">
       EVM Address: {{ truncateAddress(evmAddress) }}
     </p>
-    <p v-if="nftStatus" class="nft-status">
-      {{ nftStatus }}
-      <span v-if="warpBoisCount > 0" class="nft-count">Warp Bois: {{ warpBoisCount }}</span>
-      <span v-if="tacCount > 0" class="nft-count">TACs: {{ tacCount }}</span>
-    </p>
+    <div class="status-container">
+      <div class="debug-info">
+        Wallet Connected: {{ walletConnected }}<br>
+        Warp Count: {{ warpBoisCount }}<br>
+        TAC Count: {{ tacCount }}<br>
+        NFT Status: {{ nftStatus }}
+      </div>
+
+      <p class="nft-status">
+        <template v-if="walletConnected">
+          <span v-if="nftStatus">{{ nftStatus }}</span>
+          <span v-if="Number(warpBoisCount) > 0" class="nft-count">
+            Warp Bois: {{ warpBoisCount }}
+          </span>
+          <span v-if="Number(tacCount) > 0" class="nft-count">
+            TACs: {{ tacCount }}
+          </span>
+          <span v-if="!nftStatus && walletConnected" class="checking-status">
+            Checking NFTs...
+          </span>
+        </template>
+      </p>
+    </div>
     <HomeCharts />
 
     <h1>welcome to Telemeter v0.1 (Beta)</h1>
@@ -98,13 +116,24 @@ export default {
     evmAddress: String,
     warpBoisCount: {
       type: Number,
-      default: 0
+      default: 0,
+      validator(value) {
+        console.log('Validating warpBoisCount:', value)
+        return typeof value === 'number' && value >= 0
+      }
     },
     tacCount: {
       type: Number,
-      default: 0
+      default: 0,
+      validator(value) {
+        console.log('Validating tacCount:', value)
+        return typeof value === 'number' && value >= 0
+      }
     },
-    nftStatus: String
+    nftStatus: {
+      type: String,
+      default: ''
+    }
   },
   emits: ['connect-wallet', 'disconnect-wallet'],
   data() {
@@ -137,6 +166,33 @@ export default {
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.handleResize)
+  },
+  watch: {
+    warpBoisCount: {
+      handler(newVal, oldVal) {
+        console.log('HomeView: warpBoisCount changed:', {
+          old: oldVal,
+          new: newVal,
+          type: typeof newVal
+        })
+      },
+      immediate: true
+    },
+    nftStatus: {
+      handler(newVal, oldVal) {
+        console.log('HomeView: nftStatus changed:', {
+          old: oldVal,
+          new: newVal
+        })
+      },
+      immediate: true
+    },
+    walletConnected: {
+      handler(newVal) {
+        console.log('HomeView: walletConnected changed:', newVal)
+      },
+      immediate: true
+    }
   }
 }
 </script>
@@ -299,5 +355,41 @@ export default {
 
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+.status-container {
+  margin: 20px 0;
+}
+
+.debug-info {
+  background: rgba(66, 185, 131, 0.1);
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.nft-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.checking-status {
+  color: #666;
+  font-style: italic;
+}
+
+.nft-count {
+  background: #42b983;
+  color: #1a1a1a;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
 }
 </style> 
