@@ -154,7 +154,6 @@ export default {
           return;
         }
 
-        // Use the correct chain ID format
         const chainId = "pacific-1";
         await window.compass.enable(chainId);
         const offlineSigner = window.compass.getOfflineSigner(chainId);
@@ -163,90 +162,96 @@ export default {
         this.walletAddress = accounts[0].address;
         this.isConnected = true;
         
-        // Get EVM address from SEI Trace API with correct endpoint
+        // Get EVM address
         const traceResponse = await fetch(`https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.walletAddress}`);
         const traceData = await traceResponse.json();
         this.evmAddress = traceData.association?.evm_hash;
         
-        await this.handleNFTCheck();
+        // Immediate NFT check with delay to ensure wallet state is updated
+        setTimeout(async () => {
+          console.log('Performing immediate NFT check after connection')
+          await this.handleNFTCheck()
+        }, 1000)
+
         await this.logUserLogin();
       } catch (error) {
         console.error("Error connecting wallet:", error);
-        if (error.message.includes("chain id not set")) {
-          alert("Please make sure Compass wallet is properly configured for SEI Pacific-1");
-        }
       }
     },
     async handleNFTCheck() {
-      console.log('Starting NFT check for wallet:', this.walletAddress)
-      
-      if (!this.walletAddress) {
-        console.error('No wallet address available for NFT check')
+      console.log('NFT Check Starting:', {
+        wallet: this.walletAddress,
+        connected: this.isConnected,
+        isMobile: this.isMobile
+      })
+
+      if (!this.walletAddress || !this.isConnected) {
+        console.error('Invalid wallet state for NFT check')
         return
       }
 
       try {
-        const WARP_BOIS_CONTRACT = "sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm"
-        const TAC_CONTRACT = "sei14cvgwjct3rcds3xzvem6eweaehe0vd3trjjpaz6zxzgse7yx890q8w8jam"
+        const WARP_CONTRACT = "sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm"
         
-        // Add retry logic for mobile
-        const fetchWithRetry = async (url, retries = 3) => {
-          for (let i = 0; i < retries; i++) {
-            try {
-              const response = await fetch(url)
-              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-              const data = await response.json()
-              return data
-            } catch (error) {
-              console.error(`Attempt ${i + 1} failed:`, error)
-              if (i === retries - 1) throw error
-              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))) // Exponential backoff
+        // Direct query approach
+        const query = {
+          tokens: { owner: this.walletAddress }
+        }
+        const encodedQuery = Buffer.from(JSON.stringify(query)).toString('base64')
+        
+        // Try multiple API endpoints
+        const endpoints = [
+          `https://rest.sei-apis.com/cosmwasm/wasm/v1/contract/${WARP_CONTRACT}/smart/${encodedQuery}`,
+          `https://sei-api.polkachu.com/cosmwasm/wasm/v1/contract/${WARP_CONTRACT}/smart/${encodedQuery}`,
+          `https://sei-rest.brocha.in/cosmwasm/wasm/v1/contract/${WARP_CONTRACT}/smart/${encodedQuery}`
+        ]
+
+        let success = false
+        for (const endpoint of endpoints) {
+          try {
+            console.log('Trying endpoint:', endpoint)
+            const response = await fetch(endpoint)
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+            
+            const data = await response.json()
+            console.log('NFT Response:', data)
+            
+            if (data?.data?.tokens) {
+              this.warpBoisCount = data.data.tokens.length
+              console.log('Successfully found Warp Bois:', this.warpBoisCount)
+              success = true
+              break
             }
+          } catch (err) {
+            console.warn(`Endpoint failed:`, err)
+            continue
           }
         }
 
-        // Query for Warp Bois
-        const query = Buffer.from(JSON.stringify({
-          tokens: { owner: this.walletAddress }
-        })).toString('base64')
+        if (!success) {
+          // Fallback to Pallet API
+          console.log('Trying Pallet API fallback...')
+          const palletResponse = await fetch(
+            `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true`
+          )
+          if (palletResponse.ok) {
+            const palletData = await palletResponse.json()
+            const warpNFTs = palletData.nfts?.filter(nft => 
+              nft.collection.symbol === "WARP"
+            )
+            this.warpBoisCount = warpNFTs?.length || 0
+            console.log('Pallet API found Warp Bois:', this.warpBoisCount)
+          }
+        }
 
-        const warpUrl = `https://rest.sei-apis.com/cosmwasm/wasm/v1/contract/${WARP_BOIS_CONTRACT}/smart/${query}`
-        const tacUrl = `https://rest.sei-apis.com/cosmwasm/wasm/v1/contract/${TAC_CONTRACT}/smart/${query}`
-
-        // Fetch both NFT counts in parallel with retry logic
-        const [warpData, tacData] = await Promise.all([
-          fetchWithRetry(warpUrl),
-          fetchWithRetry(tacUrl)
-        ])
-
-        // Update counts with explicit number conversion
-        this.warpBoisCount = warpData?.data?.tokens?.length || 0
-        this.tacCount = tacData?.data?.tokens?.length || 0
-
-        console.log('NFT Check Results:', {
-          wallet: this.walletAddress,
-          warpBoisCount: this.warpBoisCount,
-          tacCount: this.tacCount,
-          isMobile: this.isMobile
-        })
-
-        // Update NFT status
-        this.nftStatus = this.warpBoisCount > 0 || this.tacCount > 0 
-          ? "Warp Boi holder! 👾" 
-          : null
-
-        // Force a reactive update
+        // Force reactive update
         this.$nextTick(() => {
-          this.warpBoisCount = Number(this.warpBoisCount)
-          this.tacCount = Number(this.tacCount)
+          console.log('Final Warp Boi count:', this.warpBoisCount)
+          this.nftStatus = this.warpBoisCount > 0 ? "Warp Boi holder! 👾" : null
         })
 
       } catch (error) {
-        console.error("Error in handleNFTCheck:", error)
-        // Reset counts on error to prevent stale data
-        this.warpBoisCount = 0
-        this.tacCount = 0
-        this.nftStatus = null
+        console.error("Final NFT check error:", error)
       }
     },
     async logUserLogin() {
