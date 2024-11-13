@@ -46,29 +46,6 @@
     <p v-if="evmAddress" class="wallet-address">
       EVM Address: {{ truncateAddress(evmAddress) }}
     </p>
-    <div class="status-container">
-      <div class="debug-info">
-        Wallet Connected: {{ walletConnected }}<br>
-        Warp Count: {{ warpBoisCount }}<br>
-        TAC Count: {{ tacCount }}<br>
-        NFT Status: {{ nftStatus }}
-      </div>
-
-      <p class="nft-status">
-        <template v-if="walletConnected">
-          <span v-if="nftStatus">{{ nftStatus }}</span>
-          <span v-if="Number(warpBoisCount) > 0" class="nft-count">
-            Warp Bois: {{ warpBoisCount }}
-          </span>
-          <span v-if="Number(tacCount) > 0" class="nft-count">
-            TACs: {{ tacCount }}
-          </span>
-          <span v-if="!nftStatus && walletConnected" class="checking-status">
-            Checking NFTs...
-          </span>
-        </template>
-      </p>
-    </div>
     <HomeCharts />
 
     <h1>welcome to Telemeter v0.1 (Beta)</h1>
@@ -355,19 +332,6 @@ export default {
 
 @keyframes blink {
   50% { opacity: 0; }
-}
-
-.status-container {
-  margin: 20px 0;
-}
-
-.debug-info {
-  background: rgba(66, 185, 131, 0.1);
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 10px;
-  font-family: monospace;
-  font-size: 0.9em;
 }
 
 .nft-status {

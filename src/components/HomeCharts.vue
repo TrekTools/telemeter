@@ -179,21 +179,38 @@ export default {
   display: flex;
   justify-content: center;
   gap: 20px;
-  max-width: 800px;  /* Make charts smaller */
+  max-width: 800px;
   margin: 0 auto;
+  flex-wrap: wrap;
 }
 
 .chart-wrapper {
-  width: 350px;  /* Make charts smaller */
+  width: 350px;
+  min-width: 300px;
+  margin: 10px 0;
 }
 
 .chart {
   height: 300px;
+  min-height: 250px;
 }
 
 .chart-title {
   color: var(--primary-text);
   margin-bottom: 20px;
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .charts-container {
+    flex-direction: column;
+    align-items: center;
+    padding: 0 10px;
+  }
+
+  .chart-wrapper {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 </style>
