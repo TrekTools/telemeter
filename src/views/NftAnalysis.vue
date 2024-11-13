@@ -495,7 +495,7 @@ export default {
 
 .nft-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 20px;
   margin-top: 20px;
 }
@@ -669,5 +669,63 @@ export default {
 .view-button:hover {
   background: #3aa876;
   color: #1a1a1a;
+}
+
+/* Add mobile-specific styles */
+@media (max-width: 768px) {
+  .nft-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .nft-image {
+    height: 150px; /* Smaller images on mobile */
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .collection-stats, .wallet-stats {
+    margin-left: 0;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .stat-item {
+    font-size: 0.8em;
+    padding: 2px 6px;
+  }
+
+  .nft-info {
+    padding: 8px;
+  }
+
+  .nft-name {
+    font-size: 1em;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 8px;
+  }
+
+  .search-section {
+    padding: 10px;
+  }
+
+  .wallet-section {
+    padding: 10px;
+  }
+}
+
+/* Add tablet-specific styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .nft-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 </style>
