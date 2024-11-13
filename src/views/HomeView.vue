@@ -107,6 +107,11 @@ export default {
     nftStatus: String
   },
   emits: ['connect-wallet', 'disconnect-wallet'],
+  data() {
+    return {
+      isTerminalOpen: !this.isMobile(),
+    }
+  },
   methods: {
     handleWalletAction() {
       if (this.walletConnected) {
@@ -118,7 +123,20 @@ export default {
     truncateAddress(address) {
       if (!address) return ''
       return `${address.slice(0, 4)}...${address.slice(-4)}`
+    },
+    isMobile() {
+      return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
     }
+  },
+  mounted() {
+    window.addEventListener('resize', () => {
+      if (this.isMobile() && this.isTerminalOpen) {
+        this.isTerminalOpen = false
+      }
+    })
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.handleResize)
   }
 }
 </script>

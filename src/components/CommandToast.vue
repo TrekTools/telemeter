@@ -72,9 +72,9 @@ export default {
   },
   data() {
     return {
-      isOpen: true,
+      isOpen: !this.isMobile(),
       hidden: false,
-      isMinimized: false,
+      isMinimized: this.isMobile(),
       position: { x: window.innerWidth - 420, y: 20 },
       command: '',
       commandLogs: [],
@@ -135,6 +135,9 @@ export default {
     })
   },
   methods: {
+    isMobile() {
+      return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    },
     async fetchWarpBoiData() {
       console.log('CommandToast: Starting Warp Boi fetch...')
       try {
@@ -765,6 +768,19 @@ export default {
       // Add forceGreetingUpdate as a dependency to ensure updates
       return this.forceGreetingUpdate && this.generateGreeting()
     }
+  },
+  mounted() {
+    // Add resize listener to handle orientation changes
+    window.addEventListener('resize', () => {
+      if (this.isMobile()) {
+        this.isMinimized = true
+        this.isOpen = false
+      }
+    })
+  },
+  beforeUnmount() {
+    // Clean up
+    window.removeEventListener('resize', this.handleResize)
   }
 }
 </script>
@@ -879,6 +895,13 @@ input {
     width: 90vw;  /* wider on mobile */
     max-width: none;
     font-size: 14px;
+    right: 5vw; /* Center horizontally */
+    left: auto !important; /* Override inline position */
+    top: 20px !important; /* Keep at top */
+  }
+
+  .toast-header {
+    padding: 6px 8px; /* Slightly smaller padding on mobile */
   }
 }
 
