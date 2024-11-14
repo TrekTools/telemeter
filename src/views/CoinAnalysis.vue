@@ -414,7 +414,7 @@ export default {
 .chart-wrapper h3 {
   text-align: center;
   margin-bottom: 15px;
-  color: #fff;
+  color: #42b983;
   font-size: 18px;
   font-weight: bold;
 }
