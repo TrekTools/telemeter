@@ -198,7 +198,7 @@ export default {
           console.log('Mobile detected, trying Pallet API first');
           try {
             const palletResponse = await fetch(
-              `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true`
+              `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true&include_bids=true&fetch_nfts=true`
             );
             if (palletResponse.ok) {
               const palletData = await palletResponse.json();
