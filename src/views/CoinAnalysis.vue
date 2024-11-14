@@ -267,15 +267,51 @@ export default {
             datasets: [{
               label: `Price in $SEI`,
               data: [],
-              borderColor: '#42b883',
-              tension: 0.4
+              borderColor: [],
+              pointBackgroundColor: [],
+              segment: {
+                borderColor: ctx => {
+                  const prev = ctx.p0.parsed.y
+                  const current = ctx.p1.parsed.y
+                  if (current > prev) return '#42b983'
+                  if (current < prev) return '#ff4444'
+                  return '#ffdd57'
+                }
+              },
+              tension: 0.4,
+              borderWidth: 2
             }]
           }
         }
         
         const date = new Date(item.rounded_time).toLocaleString()
+        const price = parseFloat(item.usd_price)
+        const dataset = groupedData[item.symbol].datasets[0]
+        
+        // Determine point color based on price change
+        const prevPrice = dataset.data[dataset.data.length - 1]
+        let pointColor
+        if (dataset.data.length === 0) {
+          pointColor = '#42b983'
+        } else {
+          if (price > prevPrice) pointColor = '#42b983'
+          else if (price < prevPrice) pointColor = '#ff4444'
+          else pointColor = '#ffdd57'
+        }
+        
         groupedData[item.symbol].labels.push(date)
-        groupedData[item.symbol].datasets[0].data.push(parseFloat(item.usd_price))
+        dataset.data.push(price)
+        dataset.pointBackgroundColor.push(pointColor)
+      })
+      
+      // Limit each chart to last 48 data points
+      Object.keys(groupedData).forEach(symbol => {
+        const chart = groupedData[symbol]
+        if (chart.labels.length > 48) {
+          chart.labels = chart.labels.slice(-48)
+          chart.datasets[0].data = chart.datasets[0].data.slice(-48)
+          chart.datasets[0].pointBackgroundColor = chart.datasets[0].pointBackgroundColor.slice(-48)
+        }
       })
       
       this.processedChartData = groupedData
