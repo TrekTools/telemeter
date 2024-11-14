@@ -37,8 +37,12 @@
             {{ formatPriceChange(priceChange1h) }}
           </div>
         </div>
+        <div class="metric-card">
+          <h3>Holders</h3>
+          <div class="value">{{ holders }}</div>
+        </div>
       </div>
-      
+
       <div class="chart-container">
         <h2>Price History</h2>
         <div class="chart">
@@ -49,19 +53,30 @@
           />
         </div>
       </div>
+      
+      <div class="chart-container">
+        <h2>Top Holders Distribution</h2>
+        <div class="chart-wrapper">
+          <Pie
+            v-if="holdersPieData"
+            :data="holdersPieData"
+            :options="pieChartOptions"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { Line } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
+import { Line, Pie } from 'vue-chartjs'
+import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
+ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 export default {
   name: 'WarpToken',
-  components: { Line },
+  components: { Line, Pie },
   
   data() {
     return {
@@ -71,6 +86,33 @@ export default {
       currentPrice: 0,
       priceChange24h: 0,
       priceChange1h: 0,
+      holders: 0,
+      holdersPieData: null,
+      pieChartOptions: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#ffffff'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#ffffff',
+            bodyColor: '#42b983',
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(2);
+                return `${label}: ${percentage}%`;
+              }
+            }
+          }
+        }
+      },
       chartOptions: {
         responsive: true,
         maintainAspectRatio: false,
@@ -187,11 +229,58 @@ export default {
         this.error = error.message
         this.loading = false
       }
+    },
+
+    async fetchHoldersData() {
+      try {
+        const response = await fetch('https://seitrace.com/pacific-1/gateway/api/v1/tokens/0x921FaF220dcaf3E32FCd474d12C3892040DDe623/holders')
+        const data = await response.json()
+        
+        if (data.items && data.items.length > 0) {
+          // Set total holders count
+          this.holders = data.items[0].token.holders
+          
+          // Process top 10 holders for pie chart
+          const topHolders = data.items.slice(0, 100)
+          
+          // Calculate total for remaining holders
+          const otherHoldersTotal = data.items.slice(10).reduce((sum, holder) => 
+            sum + parseFloat(holder.value), 0
+          )
+          
+          // Calculate remaining holders count
+          const remainingHoldersCount = this.holders - 100
+          
+          this.holdersPieData = {
+            labels: [
+              ...topHolders.map(holder => {
+                const address = holder.address.name || holder.address.hash.slice(0, 8) + '...'
+                return address
+              }),
+              `${remainingHoldersCount.toLocaleString()} Others`  // Updated label
+            ],
+            datasets: [{
+              data: [
+                ...topHolders.map(holder => parseFloat(holder.value)),
+                otherHoldersTotal
+              ],
+              backgroundColor: [
+                '#42b983', '#2c3e50', '#7957d5', '#363636', '#ff3860',
+                '#209cee', '#ffdd57', '#7957d5', '#fab1a0', '#00d1b2',
+                '#4a4a4a'
+              ]
+            }]
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching holders data:', error)
+      }
     }
   },
 
   mounted() {
     this.fetchTokenData()
+    this.fetchHoldersData()
     // Refresh data every 5 minutes
     this.refreshInterval = setInterval(this.fetchTokenData, 300000)
   },
