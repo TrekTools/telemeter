@@ -168,11 +168,30 @@ export default {
           }
         },
         plugins: {
+          tooltip: {
+            enabled: true,
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#ffffff',
+            bodyColor: '#42b983',
+            padding: 10,
+            displayColors: false,
+            callbacks: {
+              label: function(context) {
+                return `Price: $${context.parsed.y.toFixed(6)}`;
+              }
+            }
+          },
           legend: {
             labels: {
               color: '#ffffff'
             }
           }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
         }
       },
       viewMode: 'charts',

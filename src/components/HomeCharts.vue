@@ -64,6 +64,23 @@ export default {
                 text: '$SEI'
               }
             }
+          },
+          plugins: {
+            tooltip: {
+              enabled: true,
+              mode: 'index',
+              intersect: false,
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#ffffff',
+              bodyColor: '#42b983',
+              padding: 10,
+              displayColors: false,
+              callbacks: {
+                label: function(context) {
+                  return `Floor Price: ${context.parsed.y} $SEI`;
+                }
+              }
+            }
           }
         }
       }

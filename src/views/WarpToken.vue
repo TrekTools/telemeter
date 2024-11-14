@@ -1,6 +1,6 @@
 <template>
   <div class="warp-token">
-    <h1>$WARP Token Analytics (Coming Soon)</h1>
+    <h1>$WARP Token Analytics</h1>
     
     <a 
       href="https://seipex.fi/0x921FaF220dcaf3E32FCd474d12C3892040DDe623" 
@@ -23,26 +23,30 @@
       <div class="metrics-grid">
         <div class="metric-card">
           <h3>Price</h3>
-          <div class="value">$0.00</div>
+          <div class="value">${{ formatPrice(currentPrice) }}</div>
         </div>
         <div class="metric-card">
-          <h3>Market Cap</h3>
-          <div class="value">$0</div>
+          <h3>24h Change</h3>
+          <div class="value" :class="getPriceChangeClass(priceChange24h)">
+            {{ formatPriceChange(priceChange24h) }}
+          </div>
         </div>
         <div class="metric-card">
-          <h3>24h Volume</h3>
-          <div class="value">$0</div>
-        </div>
-        <div class="metric-card">
-          <h3>Holders</h3>
-          <div class="value">0</div>
+          <h3>1h Change</h3>
+          <div class="value" :class="getPriceChangeClass(priceChange1h)">
+            {{ formatPriceChange(priceChange1h) }}
+          </div>
         </div>
       </div>
       
       <div class="chart-container">
         <h2>Price History</h2>
         <div class="chart">
-          <!-- Chart component will go here -->
+          <Line
+            v-if="chartData"
+            :data="chartData"
+            :options="chartOptions"
+          />
         </div>
       </div>
     </div>
@@ -50,50 +54,151 @@
 </template>
 
 <script>
+import { Line } from 'vue-chartjs'
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
+
 export default {
   name: 'WarpToken',
-  
-  props: {
-    warpBoisCount: {
-      type: Number,
-      default: 0
-    },
-    tacCount: {
-      type: Number,
-      default: 0
-    }
-  },
+  components: { Line },
   
   data() {
     return {
       loading: true,
       error: null,
-      tokenData: null
+      chartData: null,
+      currentPrice: 0,
+      priceChange24h: 0,
+      priceChange1h: 0,
+      chartOptions: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: { color: '#ffffff' },
+            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+          },
+          y: {
+            ticks: { color: '#ffffff' },
+            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+          }
+        },
+        plugins: {
+          tooltip: {
+            enabled: true,
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#ffffff',
+            bodyColor: '#42b983',
+            padding: 10,
+            displayColors: false,
+            callbacks: {
+              label: function(context) {
+                return `Price: $${context.parsed.y.toFixed(6)}`;
+              }
+            }
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        }
+      }
     }
   },
-  
-  computed: {
-    hasRequiredNFT() {
-      return this.warpBoisCount > 0 || this.tacCount > 0
-    }
-  },
-  
-  mounted() {
-    if (this.hasRequiredNFT) {
-      this.fetchTokenData()
-    }
-  },
-  
+
   methods: {
+    formatPrice(price) {
+      return price?.toFixed(6) || '0.000000'
+    },
+
+    formatPriceChange(change) {
+      if (!change) return '0.00%'
+      return `${(change * 100).toFixed(2)}%`
+    },
+
+    getPriceChangeClass(change) {
+      if (!change) return ''
+      return change > 0 ? 'positive-change' : 'negative-change'
+    },
+
+    calculatePriceChange(oldPrice, newPrice) {
+      if (!oldPrice || !newPrice) return 0
+      return (newPrice - oldPrice) / oldPrice
+    },
+
     async fetchTokenData() {
       try {
-        // Placeholder for API call
+        const response = await fetch(process.env.VUE_APP_GRAPHQL_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-hasura-admin-secret': process.env.VUE_APP_HASURA_ADMIN_SECRET
+          },
+          body: JSON.stringify({
+            query: `
+              query WarpTokenData {
+                token_timeseries(
+                  where: { symbol: { _eq: "WARP" } }
+                  order_by: { record: asc }
+                ) {
+                  symbol
+                  usd_price
+                  record
+                  rounded_time
+                }
+              }
+            `
+          })
+        })
+        
+        const json = await response.json()
+        if (json.errors) throw new Error(json.errors[0].message)
+        
+        const data = json.data.token_timeseries
+        if (data.length > 0) {
+          // Process chart data
+          this.chartData = {
+            labels: data.map(d => new Date(d.rounded_time).toLocaleString()),
+            datasets: [{
+              label: 'WARP Price',
+              data: data.map(d => parseFloat(d.usd_price)),
+              borderColor: '#42b983',
+              tension: 0.4
+            }]
+          }
+
+          // Calculate current price and changes
+          const prices = data.map(d => parseFloat(d.usd_price))
+          const currentPrice = prices[prices.length - 1]
+          const hourAgoPrice = prices[Math.max(0, prices.length - 1)]
+          const dayAgoPrice = prices[Math.max(0, prices.length - 24)]
+
+          this.currentPrice = currentPrice
+          this.priceChange1h = this.calculatePriceChange(hourAgoPrice, currentPrice)
+          this.priceChange24h = this.calculatePriceChange(dayAgoPrice, currentPrice)
+        }
+
         this.loading = false
       } catch (error) {
-        console.error('Error fetching token data:', error)
+        console.error('Error fetching data:', error)
         this.error = error.message
         this.loading = false
       }
+    }
+  },
+
+  mounted() {
+    this.fetchTokenData()
+    // Refresh data every 5 minutes
+    this.refreshInterval = setInterval(this.fetchTokenData, 300000)
+  },
+
+  beforeUnmount() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval)
     }
   }
 }
@@ -190,5 +295,18 @@ export default {
 
 .buy-warp-button:active {
   transform: translateY(0);
+}
+
+.positive {
+  color: #42b983 !important;
+}
+
+.negative {
+  color: #ff4444 !important;
+}
+
+.chart {
+  height: 400px;
+  width: 100%;
 }
 </style> 
