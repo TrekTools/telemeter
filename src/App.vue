@@ -197,88 +197,39 @@ export default {
     },
 
     async handleNFTCheck() {
-      console.log('NFT Check Starting:', {
-        wallet: this.walletAddress,
-        connected: this.isConnected,
-        isMobile: this.isMobile,
-        timestamp: new Date().toISOString()
-      });
-
       if (!this.walletAddress || !this.isConnected) {
         console.error('Invalid wallet state for NFT check');
         return;
       }
 
       try {
-        // Try Pallet API first for mobile
-        if (this.isMobile) {
-          console.log('Mobile detected, trying Pallet API first');
-          try {
-            const palletResponse = await fetch(
-              `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true&include_bids=true&fetch_nfts=true`
-            );
-            if (palletResponse.ok) {
-              const palletData = await palletResponse.json();
-              const warpNFTs = palletData.nfts?.filter(nft => 
-                nft.collection.symbol === "WARP"
-              );
-              if (warpNFTs?.length > 0) {
-                this.warpBoisCount = warpNFTs.length;
-                console.log('Pallet API found Warp Bois:', this.warpBoisCount);
-                this.nftStatus = "Warp Boi holder! 👾";
-                return;
-              }
-            }
-          } catch (error) {
-            console.warn('Pallet API failed, falling back to contract query');
-          }
-        }
-
-        // Contract query as fallback
-        const WARP_CONTRACT = "sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm";
-        const query = {
-          tokens: { owner: this.walletAddress }
-        };
-        const encodedQuery = Buffer.from(JSON.stringify(query)).toString('base64');
-
-        // Try multiple endpoints with Promise.race
-        const endpoints = [
-          'https://rest.sei-apis.com',
-          'https://sei-api.polkachu.com',
-          'https://sei-rest.brocha.in'
-        ];
-
-        const requests = endpoints.map(endpoint => 
-          fetch(`${endpoint}/cosmwasm/wasm/v1/contract/${WARP_CONTRACT}/smart/${encodedQuery}`)
-            .then(async (response) => {
-              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-              const data = await response.json();
-              return data;
-            })
+        // Try Pallet API first
+        const palletResponse = await fetch(
+          `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true&include_bids=true&fetch_nfts=true`
         );
-
-        const data = await Promise.race(requests);
         
-        if (data?.data?.tokens) {
-          const count = data.data.tokens.length;
-          console.log('Contract query found tokens:', count);
+        if (palletResponse.ok) {
+          const palletData = await palletResponse.json();
+          // Check for both WARP and TAC NFTs
+          const warpNFTs = palletData.nfts?.filter(nft => 
+            nft.collection.symbol === 'WARP'
+          );
+          const tacNFTs = palletData.nfts?.filter(nft => 
+            nft.collection.symbol === 'TAC'
+          );
           
-          // Force update with setTimeout to ensure reactivity
-          setTimeout(() => {
-            this.warpBoisCount = count;
-            this.nftStatus = count > 0 ? "Warp Boi holder! 👾" : null;
-            
-            console.log('Final state after update:', {
-              count: this.warpBoisCount,
-              status: this.nftStatus,
-              isMobile: this.isMobile
-            });
-          }, 0);
+          this.warpBoisCount = warpNFTs?.length || 0;
+          this.tacCount = tacNFTs?.length || 0;
+          
+          console.log('NFT Check Results:', {
+            warpBois: this.warpBoisCount,
+            tacs: this.tacCount
+          });
+          return;
         }
-
       } catch (error) {
-        console.error("NFT check error:", error);
-        // Don't reset counts on error, maintain previous state
+        console.error('Error in NFT check:', error);
+        // Don't reset counts on error
       }
     },
     async logUserLogin() {
