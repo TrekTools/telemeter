@@ -41,6 +41,10 @@
               Name
               <span class="sort-indicator">{{ getSortIndicator('name') }}</span>
             </th>
+            <th @click="sort('type')" class="sortable">
+              Type
+              <span class="sort-indicator">{{ getSortIndicator('type') }}</span>
+            </th>
             <th @click="sort('adjustedBalance')" class="sortable numeric">
               Balance
               <span class="sort-indicator">{{ getSortIndicator('adjustedBalance') }}</span>
@@ -59,6 +63,7 @@
           <tr v-for="(token, index) in filteredAndSortedTokens" :key="token.address + '-' + index">
             <td>{{ token.walletLabel }}</td>
             <td>{{ token.name }}</td>
+            <td>{{ token.type }}</td>
             <td>{{ formatNumber(token.adjustedBalance, 6) }}</td>
             <td>${{ formatNumber(token.priceUSD || 0, 6) }}</td>
             <td>${{ formatNumber(token.calculatedValue, 2) }}</td>
@@ -147,25 +152,28 @@ export default {
       })
     },
     filteredAndSortedTokens() {
-      const query = this.searchQuery.trim().toLowerCase()
+      const query = this.searchQuery.trim().toLowerCase();
 
       let result = this.tokensWithPrices.map(token => {
-        // Get decimals based on token type
-        let decimals;
-        if (token.type === 'ERC-20') {
-          decimals = 6; // Force 6 decimals for EVM tokens
-        } else {
-          decimals = this.prices[token.address]?.Decimals || 0;
+        const priceEntry = this.prices[token.address?.toLowerCase()];
+        
+        // Get decimals from token_timeseries data
+        const decimals = priceEntry?.decimals;
+        
+        if (decimals === undefined) {
+          console.warn(`No decimals found for token: ${token.name} (${token.address})`);
         }
 
-        const adjustedBalance = token.value / Math.pow(10, decimals);
+        const adjustedBalance = decimals !== undefined ? 
+          token.value / Math.pow(10, decimals) : 
+          token.value; // If no decimals found, use raw value
         
         return {
           ...token,
           adjustedBalance,
           calculatedValue: (token.priceUSD || 0) * adjustedBalance,
           walletLabel: this.internalWalletLabels[token.walletAddress] || this.truncateAddress(token.walletAddress)
-        }
+        };
       });
 
       // Filter based on search query
@@ -250,7 +258,7 @@ export default {
 
     async fetchPrices() {
       try {
-        // First query to get current_max
+        // First get current_max
         const maxRecordResponse = await fetch(process.env.VUE_APP_GRAPHQL_ENDPOINT, {
           method: 'POST',
           headers: {
@@ -266,15 +274,13 @@ export default {
               }
             `
           })
-        })
+        });
         
-        const maxRecordJson = await maxRecordResponse.json()
-        if (maxRecordJson.errors) throw new Error(maxRecordJson.errors[0].message)
-        
-        const currentMax = maxRecordJson.data.max_record_24[0].current_max
+        const maxRecordJson = await maxRecordResponse.json();
+        const currentMax = maxRecordJson.data.max_record_24[0].current_max;
 
-        // Second query using the currentMax value
-        const pricesResponse = await fetch(process.env.VUE_APP_GRAPHQL_ENDPOINT, {
+        // Fetch both prices and decimals
+        const response = await fetch(process.env.VUE_APP_GRAPHQL_ENDPOINT, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -282,31 +288,42 @@ export default {
           },
           body: JSON.stringify({
             query: `
-              query latest_prices {
+              query latest_prices_and_decimals {
                 token_prices(where: {record: {_eq: ${currentMax}}}) {
                   Token
-                  rounded_time
                   PriceUSD
-                  Decimals
+                }
+                token_timeseries(distinct_on: address) {
+                  address
+                  decimals
                 }
               }
             `
           })
-        })
+        });
         
-        const pricesJson = await pricesResponse.json()
-        if (pricesJson.errors) throw new Error(pricesJson.errors[0].message)
+        const data = await response.json();
+        if (data.errors) throw new Error(data.errors[0].message);
         
-        // Convert to lookup object using Token as key
-        this.prices = pricesJson.data.token_prices.reduce((acc, price) => {
-          acc[price.Token.toLowerCase()] = price
-          return acc
-        }, {})
+        // Create decimals lookup
+        const decimalsLookup = data.data.token_timeseries.reduce((acc, item) => {
+          acc[item.address.toLowerCase()] = item.decimals;
+          return acc;
+        }, {});
 
-        console.log('Fetched prices:', this.prices) // Debug log
+        // Create prices lookup with decimals
+        this.prices = data.data.token_prices.reduce((acc, price) => {
+          acc[price.Token.toLowerCase()] = {
+            ...price,
+            decimals: decimalsLookup[price.Token.toLowerCase()] || 6 // fallback to 6 if not found
+          };
+          return acc;
+        }, {});
+
+        console.log('Fetched prices and decimals:', this.prices);
       } catch (error) {
-        console.error('Error fetching prices:', error)
-        this.error = 'Failed to fetch price data'
+        console.error('Error fetching prices:', error);
+        this.error = 'Failed to fetch price data';
       }
     },
 
@@ -675,8 +692,10 @@ export default {
 
 .token-table td:first-child,
 .token-table td:nth-child(2),
+.token-table td:nth-child(3),
 .token-table th:first-child,
-.token-table th:nth-child(2) {
+.token-table th:nth-child(2),
+.token-table th:nth-child(3) {
   text-align: left;
 }
 </style>
