@@ -61,7 +61,7 @@
             <td>{{ token.name }}</td>
             <td>{{ formatNumber(token.adjustedBalance, 6) }}</td>
             <td>${{ formatNumber(token.priceUSD || 0, 4) }}</td>
-            <td>${{ formatNumber(token.calculatedValue, 6) }}</td>
+            <td>${{ formatNumber(token.calculatedValue, 2) }}</td>
           </tr>
         </tbody>
       </table>

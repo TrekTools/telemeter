@@ -374,14 +374,21 @@ export default {
       if (!this.evmAddress) return 0;
       
       try {
-        console.log('Checking WARP balance for address:', this.evmAddress);
-        const response = await fetch(`https://api.routescan.io/v2/network/mainnet/evm/168587773/address/${this.evmAddress}/token/${this.WARP_CONTRACT_ADDRESS}/balance`);
+        const response = await fetch(`https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.evmAddress}/tokens?type=ERC-20`);
         const data = await response.json();
-        console.log('WARP balance response:', data);
         
-        // Convert balance from wei to token amount (assuming 18 decimals)
-        this.warpTokenBalance = Number(data.balance) / 1e18;
-        console.log('Converted WARP balance:', this.warpTokenBalance);
+        // Find WARP token in the response
+        const warpToken = data.items.find(item => 
+          item.token.address.toLowerCase() === this.WARP_CONTRACT_ADDRESS.toLowerCase()
+        );
+        
+        if (warpToken) {
+          // Get value and consider decimals (6 for WARP token)
+          this.warpTokenBalance = Number(warpToken.value) / 1e6;
+          console.log('WARP balance:', this.warpTokenBalance);
+        } else {
+          this.warpTokenBalance = 0;
+        }
         
         return this.warpTokenBalance;
       } catch (error) {

@@ -49,17 +49,17 @@
     </p>
 
     <div class="status-container">
-      <p v-if="nftStatus" class="nft-status">
-        <span v-if="warpBoisCount > 0">
+      <div class="nft-status">
+        <div v-if="warpBoisCount > 0" class="status-row">
           Warp Boi holder! 👾 <span class="nft-count">Warp Bois: {{ warpBoisCount }}</span>
-        </span>
-        <span v-if="tacCount > 0">
-          TAC holder! 🎫 <span class="nft-count">TACs: {{ tacCount }}</span>
-        </span>
-        <span v-if="warpTokenBalance > 0">
+        </div>
+        <div v-if="warpTokenBalance > 0" class="status-row">
           $WARP holder! 💎 <span class="nft-count">$WARP: {{ formatWarpBalance(warpTokenBalance) }}</span>
-        </span>
-      </p>
+        </div>
+        <div v-if="tacCount > 0" class="status-row">
+          TAC holder! 🎫 <span class="nft-count">TACs: {{ tacCount }}</span>
+        </div>
+      </div>
     </div>
 
     <HomeCharts />
@@ -109,30 +109,16 @@ export default {
     evmAddress: String,
     warpBoisCount: {
       type: Number,
-      default: 0,
-      validator(value) {
-        console.log('Validating warpBoisCount:', value)
-        return typeof value === 'number' && value >= 0
-      }
+      default: 0
     },
     tacCount: {
       type: Number,
-      default: 0,
-      validator(value) {
-        console.log('Validating tacCount:', value)
-        return typeof value === 'number' && value >= 0
-      }
+      default: 0
     },
-    nftStatus: {
-      type: String,
-      default: ''
-    },
+    nftStatus: String,
     warpTokenBalance: {
       type: Number,
-      default: 0,
-      validator(value) {
-        return typeof value === 'number' && value >= 0
-      }
+      default: 0
     }
   },
   emits: ['connect-wallet', 'disconnect-wallet'],
@@ -157,6 +143,7 @@ export default {
       return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
     },
     formatWarpBalance(balance) {
+      if (!balance) return '0';
       return balance.toLocaleString(undefined, {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
@@ -389,18 +376,22 @@ export default {
 .status-container {
   display: flex;
   justify-content: center;
-  align-items: center;
   width: 100%;
   margin: 20px 0;
 }
 
 .nft-status {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 10px;
-  flex-wrap: wrap;
   text-align: center;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .nft-count {
