@@ -1,5 +1,5 @@
 <template>
-  <div v-if="hasRequiredNFT" class="portfolio-analysis">
+  <div v-if="hasAccess" class="portfolio-analysis">
     <h1>Portfolio</h1>
     
     <ValueSummaryTiles 
@@ -70,7 +70,12 @@
   
   <div v-else class="access-denied">
     <h2>Access Denied</h2>
-    <p>You need to own a Warp Boi or Trek Access Chit to view this page.</p>
+    <p>You need one of the following to access this page:</p>
+    <ul>
+      <li>Own a Warp Boi NFT</li>
+      <li>Own a Trek Access Chit NFT</li>
+      <li>Hold at least 1,000,000 $WARP tokens</li>
+    </ul>
   </div>
 </template>
 
@@ -85,6 +90,10 @@ export default {
   },
   
   props: {
+    hasAccess: {
+      type: Boolean,
+      required: true
+    },
     warpBoisCount: {
       type: Number,
       default: 0
@@ -120,9 +129,6 @@ export default {
   },
 
   computed: {
-    hasRequiredNFT() {
-      return this.warpBoisCount > 0 || this.tacCount > 0
-    },
     tokensWithPrices() {
       return this.tokens.map(token => ({
         ...token,
@@ -516,7 +522,7 @@ export default {
   },
 
   mounted() {
-    if (this.hasRequiredNFT && this.walletAddress) {
+    if (this.hasAccess && this.walletAddress) {
       this.fetchAllData()
     }
     // Emit initial token value

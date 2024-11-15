@@ -5,6 +5,7 @@
       :wallet-address="walletAddress"
       :warp-bois-count="warpBoisCount"
       :tac-count="tacCount"
+      :warp-token-balance="warpTokenBalance"
     />
     
     <div class="terminal-header">
@@ -49,9 +50,15 @@
 
     <div class="status-container">
       <p v-if="nftStatus" class="nft-status">
-        {{ nftStatus }}
-        <span v-if="warpBoisCount > 0" class="nft-count">Warp Bois: {{ warpBoisCount }}</span>
-        <span v-if="tacCount > 0" class="nft-count">TACs: {{ tacCount }}</span>
+        <span v-if="warpBoisCount > 0">
+          Warp Boi holder! 👾 <span class="nft-count">Warp Bois: {{ warpBoisCount }}</span>
+        </span>
+        <span v-if="tacCount > 0">
+          TAC holder! 🎫 <span class="nft-count">TACs: {{ tacCount }}</span>
+        </span>
+        <span v-if="warpTokenBalance > 0">
+          $WARP holder! 💎 <span class="nft-count">$WARP: {{ formatWarpBalance(warpTokenBalance) }}</span>
+        </span>
       </p>
     </div>
 
@@ -119,6 +126,13 @@ export default {
     nftStatus: {
       type: String,
       default: ''
+    },
+    warpTokenBalance: {
+      type: Number,
+      default: 0,
+      validator(value) {
+        return typeof value === 'number' && value >= 0
+      }
     }
   },
   emits: ['connect-wallet', 'disconnect-wallet'],
@@ -141,6 +155,12 @@ export default {
     },
     isMobile() {
       return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    },
+    formatWarpBalance(balance) {
+      return balance.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
     }
   },
   mounted() {

@@ -4,13 +4,15 @@
       :wallet-connected="isConnected"
       :wallet-address="walletAddress"
       :evm-address="evmAddress"
+      :has-access="hasAppAccess"
       :warp-bois-count="Number(warpBoisCount)"
       :tac-count="Number(tacCount)"
       :nft-status="nftStatus"
+      :warp-token-balance="warpTokenBalance"
       @connect-wallet="handleConnect"
       @disconnect-wallet="disconnectWallet"
       @check-nfts="handleNFTCheck"
-    ></router-view>
+    />
     
     <!-- Add CommandToast with all required props -->
     <CommandToast 
@@ -117,7 +119,10 @@ export default {
       nftAnalysisData: {
         linkedWallets: []
       },
-      currentTheme: 'theme-green' // default theme
+      currentTheme: 'theme-green', // default theme
+      warpTokenBalance: 0,
+      WARP_CONTRACT_ADDRESS: '0x921FaF220dcaf3E32FCd474d12C3892040DDe623',
+      WARP_MINIMUM_BALANCE: 1000000
     }
   },
   created() {
@@ -163,10 +168,17 @@ export default {
         this.walletAddress = accounts[0].address;
         this.isConnected = true;
         
-        // Get EVM address
-        const traceResponse = await fetch(`https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.walletAddress}`);
-        const traceData = await traceResponse.json();
-        this.evmAddress = traceData.association?.evm_hash;
+        // Replace seitrace with Pallet API
+        try {
+          const palletResponse = await fetch(
+            `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_estimated_value=true`
+          );
+          const palletData = await palletResponse.json();
+          this.evmAddress = palletData.evm_address;
+          console.log('EVM address from Pallet:', this.evmAddress);
+        } catch (error) {
+          console.error('Error fetching EVM address from Pallet:', error);
+        }
 
         // Add longer delay for mobile
         const delay = this.isMobile ? 2000 : 1000;
@@ -354,6 +366,25 @@ export default {
         this.$refs.commandToast.hidden = false
         this.terminalHidden = false
       }
+    },
+    async checkWarpBalance() {
+      if (!this.evmAddress) return 0;
+      
+      try {
+        console.log('Checking WARP balance for address:', this.evmAddress);
+        const response = await fetch(`https://api.routescan.io/v2/network/mainnet/evm/168587773/address/${this.evmAddress}/token/${this.WARP_CONTRACT_ADDRESS}/balance`);
+        const data = await response.json();
+        console.log('WARP balance response:', data);
+        
+        // Convert balance from wei to token amount (assuming 18 decimals)
+        this.warpTokenBalance = Number(data.balance) / 1e18;
+        console.log('Converted WARP balance:', this.warpTokenBalance);
+        
+        return this.warpTokenBalance;
+      } catch (error) {
+        console.error('Error fetching WARP balance:', error);
+        return 0;
+      }
     }
   },
   setup() {
@@ -367,6 +398,13 @@ export default {
     return {
       sharedTokenValue,
       updateSharedTokenValue
+    }
+  },
+  computed: {
+    hasAppAccess() {
+      return this.warpBoisCount > 0 || 
+             this.tacCount > 0 || 
+             this.warpTokenBalance >= this.WARP_MINIMUM_BALANCE;
     }
   }
 }
