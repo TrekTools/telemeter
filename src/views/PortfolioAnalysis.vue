@@ -60,7 +60,7 @@
             <td>{{ token.walletLabel }}</td>
             <td>{{ token.name }}</td>
             <td>{{ formatNumber(token.adjustedBalance, 6) }}</td>
-            <td>${{ formatNumber(token.priceUSD || 0, 4) }}</td>
+            <td>${{ formatNumber(token.priceUSD || 0, 6) }}</td>
             <td>${{ formatNumber(token.calculatedValue, 2) }}</td>
           </tr>
         </tbody>
@@ -130,60 +130,67 @@ export default {
 
   computed: {
     tokensWithPrices() {
-      return this.tokens.map(token => ({
-        ...token,
-        priceUSD: this.prices[token.address]?.PriceUSD || 0
-      }))
+      return this.tokens.map(token => {
+        const priceEntry = this.prices[token.address?.toLowerCase()]
+        
+        console.log('Token price lookup:', {
+          token: token.name,
+          address: token.address,
+          priceFound: !!priceEntry,
+          price: priceEntry?.PriceUSD
+        })
+
+        return {
+          ...token,
+          priceUSD: priceEntry?.PriceUSD || 0
+        }
+      })
     },
     filteredAndSortedTokens() {
       const query = this.searchQuery.trim().toLowerCase()
 
       let result = this.tokensWithPrices.map(token => {
-        const decimals = this.prices[token.address]?.Decimals || 0
-        const adjustedBalance = token.value / Math.pow(10, decimals)
+        // Get decimals based on token type
+        let decimals;
+        if (token.type === 'ERC-20') {
+          decimals = 6; // Force 6 decimals for EVM tokens
+        } else {
+          decimals = this.prices[token.address]?.Decimals || 0;
+        }
+
+        const adjustedBalance = token.value / Math.pow(10, decimals);
+        
         return {
           ...token,
           adjustedBalance,
           calculatedValue: (token.priceUSD || 0) * adjustedBalance,
           walletLabel: this.internalWalletLabels[token.walletAddress] || this.truncateAddress(token.walletAddress)
         }
-      })
+      });
 
-      // Filter based on the search query
+      // Filter based on search query
       if (query) {
         result = result.filter(token => 
           token.name.toLowerCase().includes(query) ||
           token.walletLabel.toLowerCase().includes(query)
-        )
-      } else {
-        // Reset to all tokens if query is empty
-        result = this.tokensWithPrices.map(token => {
-          const decimals = this.prices[token.address]?.Decimals || 0
-          const adjustedBalance = token.value / Math.pow(10, decimals)
-          return {
-            ...token,
-            adjustedBalance,
-            calculatedValue: (token.priceUSD || 0) * adjustedBalance,
-            walletLabel: this.internalWalletLabels[token.walletAddress] || this.truncateAddress(token.walletAddress)
-          }
-        })
+        );
       }
 
       // Sort the results
       result.sort((a, b) => {
-        let aVal = a[this.sortKey]
-        let bVal = b[this.sortKey]
+        let aVal = a[this.sortKey];
+        let bVal = b[this.sortKey];
 
         // Convert string numbers to actual numbers for sorting
-        if (typeof aVal === 'string' && !isNaN(aVal)) aVal = Number(aVal)
-        if (typeof bVal === 'string' && !isNaN(bVal)) bVal = Number(bVal)
+        if (typeof aVal === 'string' && !isNaN(aVal)) aVal = Number(aVal);
+        if (typeof bVal === 'string' && !isNaN(bVal)) bVal = Number(bVal);
 
-        if (aVal < bVal) return this.sortOrder === 'asc' ? -1 : 1
-        if (aVal > bVal) return this.sortOrder === 'asc' ? 1 : -1
-        return 0
-      })
+        if (aVal < bVal) return this.sortOrder === 'asc' ? -1 : 1;
+        if (aVal > bVal) return this.sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
 
-      return result
+      return result;
     },
     totalTokenValue() {
       return this.filteredAndSortedTokens.reduce((sum, token) => {
@@ -266,7 +273,7 @@ export default {
         
         const currentMax = maxRecordJson.data.max_record_24[0].current_max
 
-        // Second query using the currentMax value and including Decimals
+        // Second query using the currentMax value
         const pricesResponse = await fetch(process.env.VUE_APP_GRAPHQL_ENDPOINT, {
           method: 'POST',
           headers: {
@@ -290,11 +297,13 @@ export default {
         const pricesJson = await pricesResponse.json()
         if (pricesJson.errors) throw new Error(pricesJson.errors[0].message)
         
-        // Convert to lookup object
+        // Convert to lookup object using Token as key
         this.prices = pricesJson.data.token_prices.reduce((acc, price) => {
-          acc[price.Token] = price
+          acc[price.Token.toLowerCase()] = price
           return acc
         }, {})
+
+        console.log('Fetched prices:', this.prices) // Debug log
       } catch (error) {
         console.error('Error fetching prices:', error)
         this.error = 'Failed to fetch price data'

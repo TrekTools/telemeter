@@ -11,123 +11,112 @@ import WarpToken from '@/views/WarpToken.vue'
 import DelegationsAnalysis from '@/views/DelegationsAnalysis.vue'
 import { trackPageView } from '../analytics'
 
-let appInstance = null
-
-export function setAppInstance(app) {
-  console.log('Setting app instance:', app)
-  appInstance = app
-}
+const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: HomeView
+  },
+  {
+    path: '/nft',
+    name: 'nft',
+    component: NftAnalysis,
+    meta: { requiresNFT: true, title: 'Telemeter - NFT Analysis' }
+  },
+  {
+    path: '/coins',
+    name: 'coins',
+    component: CoinAnalysis,
+    meta: { requiresNFT: true, title: 'Telemeter - Coin Analysis' }
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: EditProfile,
+    meta: { requiresNFT: true, title: 'Telemeter - Edit Profile' }
+  },
+  {
+    path: '/portfolio',
+    name: 'Portfolio',
+    component: PortfolioAnalysis,
+    meta: { requiresNFT: true, title: 'Telemeter - Portfolio Analysis' }
+  },
+  {
+    path: '/trends',
+    name: 'trends',
+    component: TrendAnalysis,
+    meta: { requiresNFT: true, title: 'Telemeter - Trend Analysis' }
+  },
+  {
+    path: '/guide',
+    name: 'guide',
+    component: TelemeterGuide,
+    meta: { title: 'Telemeter - Guide' }
+  },
+  {
+    path: '/about',
+    name: 'about',
+    component: AboutPage,
+    meta: { title: 'Telemeter - About' }
+  },
+  {
+    path: '/warp',
+    name: 'WarpToken',
+    component: WarpToken,
+    props: true,
+    meta: { title: 'Telemeter - Warp Token' }
+  },
+  {
+    path: '/delegations',
+    name: 'delegations',
+    component: DelegationsAnalysis,
+    props: true,
+    meta: { requiresNFT: true, title: 'Telemeter - Delegation Analysis' }
+  }
+]
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'Home',
-      component: HomeView,
-      meta: {
-        title: 'Telemeter - Home'
-      }
-    },
-    {
-      path: '/nft',
-      name: 'nft',
-      component: NftAnalysis,
-      meta: { requiresNFT: true, title: 'Telemeter - NFT Analysis' }
-    },
-    {
-      path: '/coins',
-      name: 'coins',
-      component: CoinAnalysis,
-      meta: { requiresNFT: true, title: 'Telemeter - Coin Analysis' }
-    },
-    {
-      path: '/profile',
-      name: 'profile',
-      component: EditProfile,
-      meta: { requiresNFT: true, title: 'Telemeter - Edit Profile' }
-    },
-    {
-      path: '/portfolio',
-      name: 'Portfolio',
-      component: PortfolioAnalysis,
-      meta: { requiresNFT: true, title: 'Telemeter - Portfolio Analysis' }
-    },
-    {
-      path: '/trends',
-      name: 'trends',
-      component: TrendAnalysis,
-      meta: { requiresNFT: true, title: 'Telemeter - Trend Analysis' }
-    },
-    {
-      path: '/guide',
-      name: 'guide',
-      component: TelemeterGuide,
-      meta: { title: 'Telemeter - Guide' }
-    },
-    {
-      path: '/about',
-      name: 'about',
-      component: AboutPage,
-      meta: { title: 'Telemeter - About' }
-    },
-    {
-      path: '/warp',
-      name: 'WarpToken',
-      component: WarpToken,
-      props: true,
-      meta: { title: 'Telemeter - Warp Token' }
-    },
-    {
-      path: '/delegations',
-      name: 'delegations',
-      component: DelegationsAnalysis,
-      props: true,
-      meta: { requiresNFT: true, title: 'Telemeter - Delegation Analysis' }
-    }
-  ]
+  routes
 })
 
+let appInstance = null
+
+export const setAppInstance = (app) => {
+  appInstance = app
+}
+
 router.beforeEach((to, from, next) => {
-  document.title = to.meta.title || 'Telemeter'
-  if (to.meta.requiresNFT) {
-    try {
-      console.log('Route Guard Debug:', {
-        appInstance: appInstance,
-        warpBoisCount: appInstance?.warpBoisCount,
-        tacCount: appInstance?.tacCount,
-        routerViewProps: appInstance?.$refs?.routerView,
-        path: to.path
-      })
+  if (to.meta.requiresAuth) {
+    if (!appInstance) {
+      console.error('App instance not found');
+      next('/');
+      return;
+    }
 
-      if (!appInstance) {
-        console.log('App instance not available yet - denying access')
-        next('/')
-        return
-      }
+    // Get access state from root component
+    const root = appInstance._instance.root;
+    const hasAccess = root.ctx.hasAppAccess || 
+                     root.ctx.warpBoisCount > 0 || 
+                     root.ctx.tacCount > 0 || 
+                     root.ctx.warpTokenBalance >= root.ctx.WARP_MINIMUM_BALANCE;
 
-      // Check NFT counts directly from app instance
-      const hasRequiredNFT = appInstance.warpBoisCount > 0 || appInstance.tacCount > 0
-      
-      console.log('Access Check:', {
-        warpBoisCount: appInstance.warpBoisCount,
-        tacCount: appInstance.tacCount,
-        hasAccess: hasRequiredNFT
-      })
-      
-      if (hasRequiredNFT) {
-        console.log('Access granted - proceeding to', to.path)
-        next()
-      } else {
-        console.log('Access denied - redirecting to home')
-        next('/')
-      }
-    } catch (error) {
-      console.error('Error in route guard:', error)
-      next('/')
+    console.log('Access Check:', {
+      warpBoisCount: root.ctx.warpBoisCount,
+      tacCount: root.ctx.tacCount,
+      warpTokenBalance: root.ctx.warpTokenBalance,
+      hasAccess
+    });
+
+    if (!hasAccess) {
+      sessionStorage.setItem('intendedPath', to.path);
+      console.log('Access denied - redirecting to home');
+      next('/');
+    } else {
+      next();
     }
   } else {
-    next()
+    next();
   }
 })
 
