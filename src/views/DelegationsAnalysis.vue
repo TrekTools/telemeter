@@ -59,7 +59,12 @@
         <tbody>
           <tr v-for="delegation in filteredAndSortedDelegations" :key="delegation.id">
             <td>{{ delegation.delegatorLabel }}</td>
-            <td>{{ getValidatorMoniker(delegation.validatorAddress) }}</td>
+            <td>
+              <div class="validator-info">
+                <div class="validator-name">{{ getValidatorMoniker(delegation.validatorAddress) }}</div>
+                <div class="validator-address">{{ truncateAddress(delegation.validatorAddress) }}</div>
+              </div>
+            </td>
             <td>{{ formatAmount(delegation.amount, delegation.denom) }}</td>
             <td>{{ formatNumber(delegation.shares) }}</td>
             <td>{{ formatDenom(delegation.denom) }}</td>
@@ -266,6 +271,7 @@ export default {
       
       try {
         await this.fetchSeiPrice()
+        await this.fetchValidators()
         const wallets = await this.fetchLinkedWallets()
         
         const allDelegations = await Promise.all(
@@ -550,5 +556,22 @@ h1 {
 
 .delegations-table tbody tr:last-child {
   border-bottom: none;
+}
+
+.validator-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.validator-name {
+  color: #42b983;
+  font-weight: 500;
+}
+
+.validator-address {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85em;
+  font-family: monospace;
 }
 </style> 
