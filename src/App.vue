@@ -176,6 +176,9 @@ export default {
           const palletData = await palletResponse.json();
           this.evmAddress = palletData.evm_address;
           console.log('EVM address from Pallet:', this.evmAddress);
+          
+          // Add this: Check WARP balance after getting EVM address
+          await this.checkWarpBalance();
         } catch (error) {
           console.error('Error fetching EVM address from Pallet:', error);
         }
