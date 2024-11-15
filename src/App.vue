@@ -55,6 +55,7 @@
           <router-link to="/trends" class="nav-link">Market Trends</router-link>
           <router-link to="/profile" class="nav-link">Profile</router-link>
           <router-link to="/warp" class="nav-link">$WARP</router-link>
+          <router-link to="/delegations" class="nav-link">Delegations</router-link>
         </template>
       </nav>
 
@@ -78,6 +79,7 @@
               <router-link to="/trends" class="drawer-link" @click="closeDrawer">Market Trends</router-link>
               <router-link to="/profile" class="drawer-link" @click="closeDrawer">Profile</router-link>
               <router-link to="/warp" class="drawer-link" @click="closeDrawer">$WARP</router-link>
+              <router-link to="/delegations" class="drawer-link" @click="closeDrawer">Delegations</router-link>
             </template>
           </div>
         </div>

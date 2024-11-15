@@ -12,6 +12,10 @@
       <h3>NFT Portfolio Value</h3>
       <div class="value">${{ formatNumber(nftValue, 2) }}</div>
     </div>
+    <div class="value-tile">
+      <h3>Delegation Value</h3>
+      <div class="value">${{ formatNumber(delegationValue, 2) }}</div>
+    </div>
   </div>
 </template>
 
@@ -26,11 +30,15 @@ export default {
     nftValue: {
       type: Number,
       default: 0
+    },
+    delegationValue: {
+      type: Number,
+      default: 0
     }
   },
   computed: {
     totalValue() {
-      return this.tokenValue + this.nftValue
+      return this.tokenValue + this.nftValue + this.delegationValue
     }
   },
   methods: {

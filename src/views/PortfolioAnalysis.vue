@@ -5,6 +5,7 @@
     <ValueSummaryTiles 
       :token-value="totalTokenValue"
       :nft-value="totalNftValue"
+      :delegation-value="delegationValue"
     />
     
     <div class="beta-notice">
@@ -40,15 +41,15 @@
               Name
               <span class="sort-indicator">{{ getSortIndicator('name') }}</span>
             </th>
-            <th @click="sort('adjustedBalance')" class="sortable">
+            <th @click="sort('adjustedBalance')" class="sortable numeric">
               Balance
               <span class="sort-indicator">{{ getSortIndicator('adjustedBalance') }}</span>
             </th>
-            <th @click="sort('priceUSD')" class="sortable">
+            <th @click="sort('priceUSD')" class="sortable numeric">
               Price (USD)
               <span class="sort-indicator">{{ getSortIndicator('priceUSD') }}</span>
             </th>
-            <th @click="sort('calculatedValue')" class="sortable">
+            <th @click="sort('calculatedValue')" class="sortable numeric">
               Value (USD)
               <span class="sort-indicator">{{ getSortIndicator('calculatedValue') }}</span>
             </th>
@@ -113,7 +114,8 @@ export default {
       sortOrder: 'desc',
       internalWalletLabels: {},
       linkedWallets: [],
-      seiUsdPrice: 0
+      seiUsdPrice: 0,
+      delegations: [],
     }
   },
 
@@ -194,6 +196,17 @@ export default {
 
       // Convert SEI value to USD
       return nftValueInSei * this.seiPrice
+    },
+    totalDelegationAmount() {
+      return this.delegations.reduce((sum, delegation) => {
+        if (delegation.denom === 'usei') {
+          return sum + (parseFloat(delegation.amount) / 1000000)
+        }
+        return sum
+      }, 0)
+    },
+    delegationValue() {
+      return this.totalDelegationAmount * this.seiUsdPrice
     }
   },
 
@@ -383,19 +396,12 @@ export default {
 
     async fetchSeiPrice() {
       try {
-        const response = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=SEI', {
-          headers: {
-            'X-CMC_PRO_API_KEY': process.env.VUE_APP_CMC_API_KEY,
-            'Accept': 'application/json'
-          }
-        })
-        
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sei-network&vs_currencies=usd')
         const data = await response.json()
-        if (data.data?.SEI?.quote?.USD?.price) {
-          this.seiUsdPrice = data.data.SEI.quote.USD.price
-        }
+        this.seiUsdPrice = data['sei-network'].usd
       } catch (error) {
         console.error('Error fetching SEI price:', error)
+        this.seiUsdPrice = 0
       }
     },
 
@@ -460,6 +466,23 @@ export default {
         )
 
         this.linkedWallets = walletsWithNfts
+
+        // Fetch delegations for all wallets
+        const delegationsPromises = linkedWalletsData.data.map(wallet => 
+          fetch(`https://rest.wallet.pacific-1.sei.io/cosmos/staking/v1beta1/delegations/${wallet.sei_hash}`)
+            .then(res => res.json())
+            .then(data => data.delegation_responses?.map(item => ({
+              delegatorAddress: item.delegation.delegator_address,
+              validatorAddress: item.delegation.validator_address,
+              shares: item.delegation.shares,
+              denom: item.balance.denom,
+              amount: item.balance.amount
+            })) || [])
+        )
+
+        const delegationsResults = await Promise.all(delegationsPromises)
+        this.delegations = delegationsResults.flat()
+
         this.loading = false
       } catch (error) {
         console.error('Error in fetchAllData:', error)
@@ -603,9 +626,12 @@ export default {
   font-size: 0.8em;
 }
 
+.token-table th.numeric {
+  text-align: right;
+}
+
 .token-table th {
   padding: 12px 24px 12px 12px;
-  text-align: left;
   background: rgba(255, 255, 255, 0.1);
   transition: background-color 0.2s;
 }
@@ -630,5 +656,12 @@ export default {
   border-radius: 4px;
   color: #42b983;
   font-size: 0.9em;
+}
+
+.token-table td:first-child,
+.token-table td:nth-child(2),
+.token-table th:first-child,
+.token-table th:nth-child(2) {
+  text-align: left;
 }
 </style>

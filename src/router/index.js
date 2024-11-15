@@ -8,6 +8,7 @@ import TelemeterGuide from '../views/TelemeterGuide.vue'
 import AboutPage from '../views/AboutPage.vue'
 import TrendAnalysis from '../views/TrendAnalysis.vue'
 import WarpToken from '@/views/WarpToken.vue'
+import DelegationsAnalysis from '@/views/DelegationsAnalysis.vue'
 import { trackPageView } from '../analytics'
 
 let appInstance = null
@@ -76,6 +77,13 @@ const router = createRouter({
       component: WarpToken,
       props: true,
       meta: { title: 'Telemeter - Warp Token' }
+    },
+    {
+      path: '/delegations',
+      name: 'delegations',
+      component: DelegationsAnalysis,
+      props: true,
+      meta: { requiresNFT: true, title: 'Telemeter - Delegation Analysis' }
     }
   ]
 })
