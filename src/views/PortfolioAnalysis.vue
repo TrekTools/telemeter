@@ -154,29 +154,47 @@ export default {
     filteredAndSortedTokens() {
       const query = this.searchQuery.trim().toLowerCase();
 
-      let result = this.tokensWithPrices.map(token => {
-        const priceEntry = this.prices[token.address?.toLowerCase()];
+      let groupedTokens = this.tokensWithPrices.reduce((acc, token) => {
+        const key = `${token.walletLabel.toLowerCase()}-${token.name.toLowerCase()}`;
         
-        // Get decimals from token_timeseries data
-        const decimals = priceEntry?.decimals;
-        
-        if (decimals === undefined) {
-          console.warn(`No decimals found for token: ${token.name} (${token.address})`);
+        if (!acc[key]) {
+          acc[key] = {
+            walletLabel: token.walletLabel,
+            name: token.name,
+            types: new Set(),
+            balances: [],
+            calculatedValue: 0,
+            priceUSD: 0,
+            count: 0
+          };
         }
-
+        
+        acc[key].types.add(token.type);
+        
+        const decimals = this.prices[token.address?.toLowerCase()]?.decimals;
         const adjustedBalance = decimals !== undefined ? 
           token.value / Math.pow(10, decimals) : 
-          token.value; // If no decimals found, use raw value
-        
-        return {
-          ...token,
-          adjustedBalance,
-          calculatedValue: (token.priceUSD || 0) * adjustedBalance,
-          walletLabel: this.internalWalletLabels[token.walletAddress] || this.truncateAddress(token.walletAddress)
-        };
-      });
+          token.value;
 
-      // Filter based on search query
+        acc[key].balances.push(adjustedBalance);
+        acc[key].calculatedValue += ((token.priceUSD || 0) * adjustedBalance);
+        acc[key].priceUSD += (token.priceUSD || 0);
+        acc[key].count++;
+        
+        return acc;
+      }, {});
+
+      // Convert to array and format with averages
+      let result = Object.values(groupedTokens).map(group => ({
+        walletLabel: group.walletLabel,
+        name: group.name,
+        type: Array.from(group.types).sort().join(', '),
+        adjustedBalance: group.balances.reduce((sum, bal) => sum + bal, 0) / group.count,
+        priceUSD: group.priceUSD / group.count,
+        calculatedValue: group.calculatedValue / group.count
+      }));
+
+      // Apply search filter
       if (query) {
         result = result.filter(token => 
           token.name.toLowerCase().includes(query) ||
@@ -189,7 +207,6 @@ export default {
         let aVal = a[this.sortKey];
         let bVal = b[this.sortKey];
 
-        // Convert string numbers to actual numbers for sorting
         if (typeof aVal === 'string' && !isNaN(aVal)) aVal = Number(aVal);
         if (typeof bVal === 'string' && !isNaN(bVal)) bVal = Number(bVal);
 
