@@ -54,6 +54,9 @@
                 <div v-if="nft.collection_stats" class="floor-price">
                   Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
                 </div>
+                <div v-if="nft.rarity_rank" class="rarity-rank">
+                  Rank: #{{ nft.rarity_rank }}
+                </div>
               </div>
             </div>
           </div>
@@ -103,6 +106,9 @@
                 <span class="nft-name">{{ nft.name }}</span>
                 <div v-if="nft.collection_stats" class="floor-price">
                   Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
+                </div>
+                <div v-if="nft.rarity_rank" class="rarity-rank">
+                  Rank: #{{ nft.rarity_rank }}
                 </div>
               </div>
             </div>
@@ -300,28 +306,25 @@ export default {
         if (data.nfts && data.nfts.length > 0) {
           // Get unique EVM addresses
           const uniqueAddresses = [...new Set(data.nfts.map(nft => nft.collection?.evm_address))]
-          console.log('Unique EVM addresses:', uniqueAddresses)
           
           // Fetch all collection stats in one query
           const collectionStats = await this.fetchCollectionStats(uniqueAddresses)
-          console.log('Collection stats received:', collectionStats)
 
           // Create a map using EVM address as key
           const statsMap = {}
           collectionStats.forEach(stats => {
             if (stats && stats.evm_address) {
               statsMap[stats.evm_address] = stats
-              console.log(`Mapping stats for address ${stats.evm_address}:`, stats)
             }
           })
 
-          // Enrich NFT data with collection stats
+          // Enrich NFT data with collection stats and rarity
           const enrichedNFTs = data.nfts.map(nft => {
             const stats = statsMap[nft.collection?.evm_address]
-            console.log(`Enriching NFT ${nft.name} with stats:`, stats)
             return {
               ...nft,
-              collection_stats: stats || null
+              collection_stats: stats || null,
+              rarity_rank: nft.rarity?.rank // Add rarity rank from Pallet response
             }
           })
 
@@ -901,5 +904,15 @@ export default {
     left: 10px;
     max-width: none;
   }
+}
+
+.rarity-rank {
+  color: #ffd700; /* Gold color for rarity */
+  font-size: 0.9em;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 4px;
+  display: inline-block;
 }
 </style>
