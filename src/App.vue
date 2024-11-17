@@ -1,93 +1,107 @@
 <template>
-  <div id="app" :class="currentTheme">
-    <router-view 
-      :wallet-connected="isConnected"
-      :wallet-address="walletAddress"
-      :evm-address="evmAddress"
-      :has-access="hasAppAccess"
-      :warp-bois-count="Number(warpBoisCount)"
-      :tac-count="Number(tacCount)"
-      :nft-status="nftStatus"
-      :warp-token-balance="warpTokenBalance"
-      @connect-wallet="handleConnect"
-      @disconnect-wallet="disconnectWallet"
-      @check-nfts="handleNFTCheck"
-    />
-    
-    <!-- Add CommandToast with all required props -->
-    <CommandToast 
-      :wallet-connected="isConnected"
-      :wallet-address="walletAddress"
-      :evm-address="evmAddress"
-      :warp-bois-count="warpBoisCount"
-      :tac-count="tacCount"
-      @connect-wallet="handleConnect"
-      @disconnect-wallet="disconnectWallet"
-      @terminal-hidden="handleTerminalHidden"
-      ref="commandToast"
-    />
+  <v-app>
+    <div id="app" :class="currentTheme">
+      <router-view 
+        :wallet-connected="isConnected"
+        :wallet-address="walletAddress"
+        :evm-address="evmAddress"
+        :has-access="hasAppAccess"
+        :warp-bois-count="Number(warpBoisCount)"
+        :tac-count="Number(tacCount)"
+        :nft-status="nftStatus"
+        :warp-token-balance="warpTokenBalance"
+        @connect-wallet="handleConnect"
+        @disconnect-wallet="disconnectWallet"
+        @check-nfts="handleNFTCheck"
+      />
+      
+      <!-- Add CommandToast with all required props -->
+      <CommandToast 
+        :wallet-connected="isConnected"
+        :wallet-address="walletAddress"
+        :evm-address="evmAddress"
+        :warp-bois-count="warpBoisCount"
+        :tac-count="tacCount"
+        @connect-wallet="handleConnect"
+        @disconnect-wallet="disconnectWallet"
+        @terminal-hidden="handleTerminalHidden"
+        ref="commandToast"
+      />
 
-    <NftConveyor 
-      :wallet-connected="isConnected"
-      :wallet-address="walletAddress"
-      :warp-bois-count="warpBoisCount"
-      :tac-count="tacCount"
-    />
-    
-    <div class="nav-container">
-      <!-- Desktop Navigation -->
-      <nav class="bottom-toolbar" v-show="!isMobile">
-        <router-link to="/" class="nav-link">Home</router-link>
-        <router-link to="/about" class="nav-link">About</router-link>
-        <router-link to="/guide" class="nav-link">Guide</router-link>
-        
-        <!-- Add terminal indicator -->
-        <div v-if="terminalHidden" 
-             class="terminal-indicator" 
-             @click="showTerminal">
-          <span class="terminal-dot"></span>
-          Terminal
-        </div>
-
-        <!-- Protected routes only shown when NFTs are owned -->
-        <template v-if="warpBoisCount > 0 || tacCount > 0">
-          <router-link to="/portfolio" class="nav-link">Portfolio</router-link>
-          <router-link to="/delegations" class="nav-link">Delegations</router-link>
-          <router-link to="/nft" class="nav-link">NFT Analysis</router-link>
-          <router-link to="/coins" class="nav-link">Coins</router-link>
-          <router-link to="/trends" class="nav-link">Market Trends</router-link>
-          <router-link to="/profile" class="nav-link">Profile</router-link>
-          <router-link to="/warp" class="nav-link">$WARP</router-link>
-        </template>
-      </nav>
-
-      <!-- Mobile Navigation with Drawer -->
-      <nav class="mobile-toolbar" v-show="isMobile">
-        <button class="drawer-toggle" @click="isDrawerOpen = !isDrawerOpen">
-          <span class="menu-icon">☰</span>
-        </button>
-        
-        <div class="drawer" :class="{ 'drawer-open': isDrawerOpen }">
-          <div class="drawer-content">
-            <router-link to="/" class="drawer-link" @click="closeDrawer">Home</router-link>
-            <router-link to="/about" class="drawer-link" @click="closeDrawer">About</router-link>
-            <router-link to="/guide" class="drawer-link" @click="closeDrawer">Guide</router-link>
-            
-            <!-- Protected routes in drawer -->
-            <template v-if="warpBoisCount > 0 || tacCount > 0">
-              <router-link to="/portfolio" class="drawer-link" @click="closeDrawer">Portfolio</router-link>
-              <router-link to="/delegations" class="drawer-link" @click="closeDrawer">Delegations</router-link>
-              <router-link to="/nft" class="drawer-link" @click="closeDrawer">NFT Analysis</router-link>
-              <router-link to="/coins" class="drawer-link" @click="closeDrawer">Coins</router-link>
-              <router-link to="/trends" class="drawer-link" @click="closeDrawer">Market Trends</router-link>
-              <router-link to="/profile" class="drawer-link" @click="closeDrawer">Profile</router-link>
-              <router-link to="/warp" class="drawer-link" @click="closeDrawer">$WARP</router-link>
-            </template>
+      <NftConveyor 
+        :wallet-connected="isConnected"
+        :wallet-address="walletAddress"
+        :warp-bois-count="warpBoisCount"
+        :tac-count="tacCount"
+      />
+      
+      <div class="nav-container">
+        <!-- Desktop Navigation -->
+        <nav class="bottom-toolbar" v-show="!isMobile">
+          <router-link to="/" class="nav-link">Home</router-link>
+          <router-link to="/about" class="nav-link">About</router-link>
+          <router-link to="/guide" class="nav-link">Guide</router-link>
+          
+          <!-- Add terminal indicator -->
+          <div v-if="terminalHidden" 
+               class="terminal-indicator" 
+               @click="showTerminal">
+            <span class="terminal-dot"></span>
+            Terminal
           </div>
-        </div>
-      </nav>
+
+          <!-- Protected routes only shown when NFTs are owned -->
+          <template v-if="warpBoisCount > 0 || tacCount > 0">
+            <router-link to="/portfolio" class="nav-link">Portfolio</router-link>
+            <router-link to="/delegations" class="nav-link">Delegations</router-link>
+            <router-link to="/nft" class="nav-link">NFT Analysis</router-link>
+            <router-link to="/coins" class="nav-link">Coins</router-link>
+            <router-link to="/trends" class="nav-link">Market Trends</router-link>
+            <router-link to="/profile" class="nav-link">Profile</router-link>
+            <router-link to="/warp" class="nav-link">$WARP</router-link>
+          </template>
+        </nav>
+
+        <!-- Mobile Navigation with Drawer -->
+        <nav class="mobile-toolbar" v-show="isMobile">
+          <button class="drawer-toggle" @click="toggleDrawer">
+            <span class="menu-icon" :class="{ 'drawer-open': drawer }">☰</span>
+          </button>
+          
+          <v-navigation-drawer
+            v-model="drawer"
+            temporary
+            location="bottom"
+            :height="400"
+          >
+            <div class="drawer-content">
+              <router-link to="/" class="drawer-link" @click="closeDrawer">Home</router-link>
+              <router-link to="/about" class="drawer-link" @click="closeDrawer">About</router-link>
+              <router-link to="/guide" class="drawer-link" @click="closeDrawer">Guide</router-link>
+              
+              <!-- Protected routes in drawer -->
+              <template v-if="warpBoisCount > 0 || tacCount > 0">
+                <router-link to="/portfolio" class="drawer-link" @click="closeDrawer">Portfolio</router-link>
+                <router-link to="/delegations" class="drawer-link" @click="closeDrawer">Delegations</router-link>
+                <router-link to="/nft" class="drawer-link" @click="closeDrawer">NFT Analysis</router-link>
+                <router-link to="/coins" class="drawer-link" @click="closeDrawer">Coins</router-link>
+                <router-link to="/trends" class="drawer-link" @click="closeDrawer">Market Trends</router-link>
+                <router-link to="/profile" class="drawer-link" @click="closeDrawer">Profile</router-link>
+                <router-link to="/warp" class="drawer-link" @click="closeDrawer">$WARP</router-link>
+              </template>
+            </div>
+          </v-navigation-drawer>
+          
+          <!-- If you have a backdrop overlay, add this -->
+          <div 
+            v-if="drawer" 
+            class="drawer-backdrop"
+            @click="closeDrawer"
+          ></div>
+        </nav>
+      </div>
     </div>
-  </div>
+  </v-app>
 </template>
 
 <script>
@@ -122,7 +136,8 @@ export default {
       currentTheme: 'theme-green', // default theme
       warpTokenBalance: 0,
       WARP_CONTRACT_ADDRESS: '0x921FaF220dcaf3E32FCd474d12C3892040DDe623',
-      WARP_MINIMUM_BALANCE: 1000000
+      WARP_MINIMUM_BALANCE: 1000000,
+      drawer: false, // Start closed
     }
   },
   created() {
@@ -294,8 +309,11 @@ export default {
         this.isDrawerOpen = false
       }
     },
+    toggleDrawer() {
+      this.drawer = !this.drawer;
+    },
     closeDrawer() {
-      this.isDrawerOpen = false
+      this.drawer = false;
     },
     handleWalletAction() {
       if (this.isConnected) {
@@ -392,7 +410,6 @@ export default {
   }
 }
 </script>
-
 <style>
 :root {
   /* Default theme (green) */
@@ -779,5 +796,39 @@ body {
   background-color: #27c93f;
   border-radius: 50%;
   display: inline-block;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 5; /* Make sure this is below your drawer's z-index */
+}
+
+.v-navigation-drawer {
+  background-color: #2c2c2c !important;
+  z-index: 1000 !important;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background-color: #2c2c2c;
+}
+
+.drawer-link {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 15px;
+  border-bottom: 1px solid #3c3c3c;
+  transition: all 0.3s ease;
+}
+
+.v-application {
+  background: transparent !important;
 }
 </style>

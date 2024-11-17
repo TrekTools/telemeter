@@ -907,7 +907,7 @@ export default {
 }
 
 .rarity-rank {
-  color: #ffd700; /* Gold color for rarity */
+  color: #ffd700;
   font-size: 0.9em;
   margin-top: 4px;
   padding: 4px 8px;
