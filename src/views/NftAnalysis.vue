@@ -47,7 +47,7 @@
         
         <div class="nft-container" v-show="!collapsedWallets[wallet.sei_hash]">
           <div class="nft-grid">
-            <div v-for="nft in filteredNFTs(wallet.nfts)" :key="nft.name" class="nft-card">
+            <div v-for="nft in filteredNFTs(wallet.nfts)" :key="nft.name" class="nft-card" :class="{ 'selected': selectedNft === nft }" @click="(event) => selectNft(nft, event)">
               <img :src="nft.image" :alt="nft.name" class="nft-image">
               <div class="nft-info">
                 <span class="nft-name">{{ nft.name }}</span>
@@ -97,7 +97,7 @@
         
         <div class="nft-container" v-show="!collapsedCollections[collectionName]">
           <div class="nft-grid">
-            <div v-for="nft in nfts" :key="nft.name" class="nft-card">
+            <div v-for="nft in nfts" :key="nft.name" class="nft-card" :class="{ 'selected': selectedNft === nft }" @click="(event) => selectNft(nft, event)">
               <img :src="nft.image" :alt="nft.name" class="nft-image">
               <div class="nft-info">
                 <span class="nft-name">{{ nft.name }}</span>
@@ -114,6 +114,25 @@
   <div v-else class="access-denied">
     <h2>Access Denied</h2>
     <p>You need to own a Warp Boi or Trek Access Chit to view this page.</p>
+  </div>
+  <div v-if="selectedNft" class="nft-popup" :style="popupStyle">
+    <div class="popup-content">
+      <h3>Actions</h3>
+      <div class="marketplace-links">
+        <a href="#" @click.prevent="openPallet(selectedNft)" class="marketplace-link">
+          List on Pallet
+        </a>
+        <a href="#" @click.prevent="tweetNft(selectedNft)" class="marketplace-link">
+          Tweet about this NFT
+        </a>
+        <a href="#" @click.prevent="viewOnSeitrace(selectedNft)" class="marketplace-link">
+          View Token via Contract
+        </a>
+        <a href="#" @click.prevent="copyWalletAddress(selectedNft)" class="marketplace-link">
+          {{ copyButtonText }}
+        </a>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -145,7 +164,10 @@ export default {
       searchQuery: '',
       viewMode: 'wallet',
       collapsedCollections: {},
-      isDataCached: false
+      isDataCached: false,
+      selectedNft: null,
+      popupPosition: { x: 0, y: 0 },
+      copyButtonText: 'Copy Wallet Address'
     }
   },
   computed: {
@@ -212,6 +234,13 @@ export default {
         const walletValue = parseFloat(this.calculateWalletValue(wallet.nfts))
         return total + walletValue
       }, 0)
+    },
+    popupStyle() {
+      return {
+        position: 'absolute',
+        left: `${this.popupPosition.x}px`,
+        top: `${this.popupPosition.y}px`
+      }
     }
   },
   methods: {
@@ -333,6 +362,7 @@ export default {
                 pallet_time_comparison {
                   evm_address
                   name
+                  slug
                   current_floor_1h
                   volume_diff_1h
                   volume_percent_diff_1h
@@ -399,6 +429,84 @@ export default {
         this.viewMode = mode
         // Update cache
         this.cacheData()
+      }
+    },
+    selectNft(nft, event) {
+      if (this.selectedNft === nft) {
+        this.selectedNft = null;
+        return;
+      }
+      
+      this.selectedNft = nft;
+      
+      const rect = event.target.closest('.nft-card').getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      
+      this.popupPosition = {
+        x: rect.right + 10,
+        y: rect.top + scrollTop
+      };
+      
+      const popup = document.querySelector('.nft-popup');
+      if (popup) {
+        const popupRect = popup.getBoundingClientRect();
+        if (rect.right + 10 + popupRect.width > window.innerWidth) {
+          this.popupPosition.x = rect.left - popupRect.width - 10;
+        }
+      }
+      this.copyButtonText = 'Copy Wallet Address';
+    },
+    openPallet(nft) {
+      console.log('NFT object:', nft); // Debug: see the NFT structure
+      const collectionSlug = nft.collection_stats?.slug;
+      const tokenId = nft.token_id || nft.tokenId || nft.id;
+      
+      if (!collectionSlug || !tokenId) {
+        console.error('Missing required NFT data:', { collectionSlug, tokenId });
+        return;
+      }
+      
+      const url = `https://pallet.exchange/collection/${collectionSlug}/${tokenId}`;
+      window.open(url, '_blank');
+    },
+    
+    tweetNft(nft) {
+      const tweetText = `Check out my NFT: ${nft.name}`;
+      const imageUrl = encodeURIComponent(nft.image);
+      const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${imageUrl}`;
+      window.open(tweetUrl, '_blank');
+    },
+    
+    viewOnSeitrace(nft) {
+      const collectionAddress = nft.collection?.evm_address;
+      const tokenId = nft.token_id || nft.tokenId || nft.id;
+      
+      if (!collectionAddress || !tokenId) {
+        console.error('Missing required NFT data:', { collectionAddress, tokenId });
+        return;
+      }
+      
+      const url = `https://seitrace.com/token/${collectionAddress}/instance/${tokenId}?chain=pacific-1`;
+      window.open(url, '_blank');
+    },
+    copyWalletAddress(nft) {
+      const wallet = this.linkedWallets.find(w => 
+        w.nfts?.some(n => n === nft)
+      );
+      
+      if (wallet?.evm_hash) {
+        navigator.clipboard.writeText(wallet.evm_hash)
+          .then(() => {
+            this.copyButtonText = 'Copied!';
+            setTimeout(() => {
+              this.copyButtonText = 'Copy Wallet Address';
+            }, 2000); // Reset after 2 seconds
+          })
+          .catch(err => {
+            console.error('Failed to copy address:', err);
+          });
+      } else {
+        console.error('Could not find wallet address for this NFT');
       }
     }
   },
@@ -505,6 +613,9 @@ export default {
   border-radius: 8px;
   overflow: hidden;
   transition: transform 0.2s;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease, transform 0.2s;
 }
 
 .nft-card:hover {
@@ -726,6 +837,69 @@ export default {
 @media (min-width: 769px) and (max-width: 1024px) {
   .nft-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.nft-card.selected {
+  border-color: gold;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.nft-card:hover:not(.selected) {
+  border-color: rgba(255, 215, 0, 0.5);
+}
+
+.nft-popup {
+  position: absolute;
+  background: #2c2c2c;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  border: 1px solid #42b983;
+  max-width: 300px;
+}
+
+.popup-content h3 {
+  margin: 0 0 8px 0;
+  color: #42b983;
+  font-size: 1.1em;
+}
+
+.marketplace-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.marketplace-link {
+  padding: 6px 12px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.marketplace-link:hover {
+  background: #42b983;
+  color: #1a1a1a;
+  transform: translateX(5px);
+}
+
+.marketplace-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* Add media query for mobile responsiveness */
+@media (max-width: 768px) {
+  .nft-popup {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
   }
 }
 </style>
