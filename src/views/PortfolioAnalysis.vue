@@ -6,10 +6,29 @@
       :token-value="totalTokenValue"
       :nft-value="totalNftValue"
       :delegation-value="delegationValue"
+      :display-currency="displayCurrency"
+      :sei-price="seiUsdPrice"
     />
     
-    <div class="beta-notice">
-      ⓘ Note: While beta evaluation is ongoing, token values are currently updated once per day.
+    <div class="controls-container">
+      <div class="beta-notice">
+        ⓘ Note: While beta evaluation is ongoing, token values are currently updated once per day.
+      </div>
+      
+      <div class="currency-toggle">
+        <button 
+          :class="['toggle-btn', { active: displayCurrency === 'USD' }]"
+          @click="displayCurrency = 'USD'"
+        >
+          USD
+        </button>
+        <button 
+          :class="['toggle-btn', { active: displayCurrency === 'SEI' }]"
+          @click="displayCurrency = 'SEI'"
+        >
+          SEI
+        </button>
+      </div>
     </div>
     
     <div class="search-container">
@@ -50,11 +69,11 @@
               <span class="sort-indicator">{{ getSortIndicator('adjustedBalance') }}</span>
             </th>
             <th @click="sort('priceUSD')" class="sortable numeric">
-              Price (USD)
+              Price ({{ displayCurrency }})
               <span class="sort-indicator">{{ getSortIndicator('priceUSD') }}</span>
             </th>
             <th @click="sort('calculatedValue')" class="sortable numeric">
-              Value (USD)
+              Value ({{ displayCurrency }})
               <span class="sort-indicator">{{ getSortIndicator('calculatedValue') }}</span>
             </th>
           </tr>
@@ -65,8 +84,8 @@
             <td>{{ token.name }}</td>
             <td>{{ token.type }}</td>
             <td>{{ formatNumber(token.adjustedBalance, 6) }}</td>
-            <td>${{ formatNumber(token.priceUSD || 0, 6) }}</td>
-            <td>${{ formatNumber(token.calculatedValue, 2) }}</td>
+            <td>{{ formatCurrencyValue(token.priceUSD, 6) }}</td>
+            <td>{{ formatCurrencyValue(token.calculatedValue, 2) }}</td>
           </tr>
         </tbody>
       </table>
@@ -130,6 +149,7 @@ export default {
       linkedWallets: [],
       seiUsdPrice: 0,
       delegations: [],
+      displayCurrency: 'USD',
     }
   },
 
@@ -561,7 +581,18 @@ export default {
     getSortIndicator(key) {
       if (this.sortKey !== key) return '↕'
       return this.sortOrder === 'asc' ? '↑' : '↓'
-    }
+    },
+
+    formatCurrencyValue(value, decimals = 2) {
+      if (!value) return this.displayCurrency === 'USD' ? '$0' : '0 SEI'
+      
+      const numValue = this.displayCurrency === 'USD' ? 
+        value : 
+        (value / (this.seiPrice || 1))
+
+      const formattedNum = this.formatNumber(numValue, decimals)
+      return this.displayCurrency === 'USD' ? `$${formattedNum}` : `${formattedNum} SEI`
+    },
   },
 
   watch: {
@@ -723,5 +754,45 @@ export default {
 .token-table th:nth-child(2),
 .token-table th:nth-child(3) {
   text-align: left;
+}
+
+.controls-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.currency-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.toggle-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.toggle-btn.active {
+  background: #42b983;
+  color: #1a1a1a;
+}
+
+.toggle-btn:hover:not(.active) {
+  background: rgba(66, 185, 131, 0.2);
+}
+
+.beta-notice {
+  flex: 1;
+  margin: 0;
 }
 </style>

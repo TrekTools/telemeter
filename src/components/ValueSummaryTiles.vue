@@ -1,20 +1,20 @@
 <template>
   <div class="value-summary">
-    <div class="value-tile total">
-      <h3>Total Portfolio Value</h3>
-      <div class="value">${{ formatNumber(totalValue, 2) }}</div>
+    <div class="value-tile">
+      <h3>Token Value</h3>
+      <div class="value">{{ formatValue(tokenValue) }}</div>
     </div>
     <div class="value-tile">
-      <h3>Token Portfolio Value</h3>
-      <div class="value">${{ formatNumber(tokenValue, 2) }}</div>
-    </div>
-    <div class="value-tile">
-      <h3>NFT Portfolio Value</h3>
-      <div class="value">${{ formatNumber(nftValue, 2) }}</div>
+      <h3>NFT Value</h3>
+      <div class="value">{{ formatValue(nftValue) }}</div>
     </div>
     <div class="value-tile">
       <h3>Delegation Value</h3>
-      <div class="value">${{ formatNumber(delegationValue, 2) }}</div>
+      <div class="value">{{ formatValue(delegationValue) }}</div>
+    </div>
+    <div class="value-tile total">
+      <h3>Total Value</h3>
+      <div class="value">{{ formatValue(totalValue) }}</div>
     </div>
   </div>
 </template>
@@ -22,6 +22,7 @@
 <script>
 export default {
   name: 'ValueSummaryTiles',
+  
   props: {
     tokenValue: {
       type: Number,
@@ -34,20 +35,40 @@ export default {
     delegationValue: {
       type: Number,
       default: 0
+    },
+    displayCurrency: {
+      type: String,
+      default: 'USD'
+    },
+    seiPrice: {
+      type: Number,
+      default: 1
     }
   },
+
   computed: {
     totalValue() {
       return this.tokenValue + this.nftValue + this.delegationValue
     }
   },
+
   methods: {
-    formatNumber(num, decimals = 0) {
-      if (!num) return '0'
-      return new Intl.NumberFormat('en-US', {
+    formatNumber(value, decimals = 2) {
+      return Number(value).toLocaleString('en-US', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals
-      }).format(num)
+      })
+    },
+
+    formatValue(value) {
+      if (!value) return this.displayCurrency === 'USD' ? '$0' : '0 SEI'
+      
+      const numValue = this.displayCurrency === 'USD' ? 
+        value : 
+        (value / (this.seiPrice || 1))
+
+      const formattedNum = this.formatNumber(numValue, 2)
+      return this.displayCurrency === 'USD' ? `$${formattedNum}` : `${formattedNum} SEI`
     }
   }
 }
