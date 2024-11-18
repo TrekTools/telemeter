@@ -171,10 +171,19 @@ export default {
         
         acc[key].types.add(token.type);
         
+        // Get decimals from prices lookup
         const decimals = this.prices[token.address?.toLowerCase()]?.decimals;
-        const adjustedBalance = decimals !== undefined ? 
-          token.value / Math.pow(10, decimals) : 
-          token.value;
+        
+        // Calculate adjusted balance with special handling
+        let adjustedBalance = decimals !== undefined ? 
+          parseFloat(token.value) / Math.pow(10, decimals) : 
+          parseFloat(token.value);
+
+        // Additional adjustment for YAKA and specific token
+        if (token.name === 'YAKA' || 
+            token.address?.toLowerCase() === '0x51121bcae92e302f19d06c193c95e1f7b81a444b'.toLowerCase()) {
+          adjustedBalance = adjustedBalance / Math.pow(10, 12);
+        }
 
         acc[key].balances.push(adjustedBalance);
         acc[key].calculatedValue += ((token.priceUSD || 0) * adjustedBalance);
