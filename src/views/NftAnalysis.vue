@@ -1,61 +1,127 @@
 <template>
-  <div v-if="hasRequiredNFT" class="nft-analysis" ref="nftAnalysis">
-    <h1>NFTs</h1>
-    
-    <div class="view-controls">
-      <button 
-        :class="['view-button', { active: viewMode === 'wallet' }]" 
-        @click="viewMode = 'wallet'"
-      >
-        Group by Wallet
-      </button>
-      <button 
-        :class="['view-button', { active: viewMode === 'collection' }]" 
-        @click="viewMode = 'collection'"
-      >
-        Group by Collection
-      </button>
-    </div>
+  <div class="nft-analysis-wrapper">
+    <div v-if="hasRequiredNFT" class="nft-analysis" ref="nftAnalysis">
+      <h1>NFTs</h1>
+      
+      <div v-if="loading" class="loading-state">
+        Loading NFTs...
+      </div>
 
-    <div class="search-section">
-      <input 
-        type="text" 
-        v-model="searchQuery" 
-        placeholder="Search by wallet label, address, or NFT name..."
-        class="search-input"
-      >
-    </div>
-    
-    <!-- Wallet View -->
-    <div v-if="viewMode === 'wallet'">
-      <div v-for="wallet in filteredWallets" :key="wallet.sei_hash" class="wallet-section">
-        <div class="wallet-header" @click="toggleWallet(wallet.sei_hash)">
-          <div class="header-content">
-            <span class="collapse-arrow" :class="{ 'collapsed': collapsedWallets[wallet.sei_hash] }">
-              ▼
-            </span>
-            <span class="wallet-label">
-              {{ wallet.label || truncateAddress(wallet.sei_hash) }}
-            </span>
-            <span class="evm-address">(EVM: {{ truncateAddress(wallet.evm_hash) }})</span>
-            <div class="wallet-stats">
-              <span class="nft-count">NFTs: {{ wallet.nfts?.length || 0 }}</span>
-              <span class="estimated-value">Est. Value: {{ calculateWalletValue(wallet.nfts) }} $SEI</span>
+      <div v-else-if="error" class="error-state">
+        {{ error }}
+        <button @click="retryLoad" class="retry-button">Retry</button>
+      </div>
+
+      <div v-else>
+        <div class="view-controls">
+          <button 
+            :class="['view-button', { active: viewMode === 'wallet' }]" 
+            @click="viewMode = 'wallet'"
+          >
+            Group by Wallet
+          </button>
+          <button 
+            :class="['view-button', { active: viewMode === 'collection' }]" 
+            @click="viewMode = 'collection'"
+          >
+            Group by Collection
+          </button>
+        </div>
+
+        <div class="search-section">
+          <input 
+            type="text" 
+            v-model="searchQuery" 
+            placeholder="Search by wallet label, address, or NFT name..."
+            class="search-input"
+          >
+        </div>
+        
+        <!-- Wallet View -->
+        <div v-if="viewMode === 'wallet'">
+          <div v-for="wallet in filteredWallets" :key="wallet.sei_hash" class="wallet-section">
+            <div class="wallet-header" @click="toggleWallet(wallet.sei_hash)">
+              <div class="header-content">
+                <span class="collapse-arrow" :class="{ 'collapsed': collapsedWallets[wallet.sei_hash] }">
+                  ▼
+                </span>
+                <span class="wallet-label">
+                  {{ wallet.label || truncateAddress(wallet.sei_hash) }}
+                </span>
+                <span class="evm-address">(EVM: {{ truncateAddress(wallet.evm_hash) }})</span>
+                <div class="wallet-stats">
+                  <span class="nft-count">NFTs: {{ wallet.nfts?.length || 0 }}</span>
+                  <span class="estimated-value">Est. Value: {{ calculateWalletValue(wallet.nfts) }} $SEI</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="nft-container" v-show="!collapsedWallets[wallet.sei_hash]">
+              <div class="nft-grid">
+                <div v-for="nft in filteredNFTs(wallet.nfts)" :key="nft.name" class="nft-card" :class="{ 'selected': selectedNft === nft }" @click="(event) => selectNft(nft, event)">
+                  <img :src="nft.image" :alt="nft.name" class="nft-image">
+                  <div class="nft-info">
+                    <span class="nft-name">{{ nft.name }}</span>
+                    <div v-if="nft.collection_stats" class="floor-price">
+                      Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
+                    </div>
+                    <div v-if="nft.rarity_rank" class="rarity-rank">
+                      Rank: #{{ nft.rarity_rank }}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div class="nft-container" v-show="!collapsedWallets[wallet.sei_hash]">
-          <div class="nft-grid">
-            <div v-for="nft in filteredNFTs(wallet.nfts)" :key="nft.name" class="nft-card" :class="{ 'selected': selectedNft === nft }" @click="(event) => selectNft(nft, event)">
-              <img :src="nft.image" :alt="nft.name" class="nft-image">
-              <div class="nft-info">
-                <span class="nft-name">{{ nft.name }}</span>
-                <div v-if="nft.collection_stats" class="floor-price">
-                  Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
+
+        <!-- Collection View -->
+        <div v-else>
+          <div v-for="(nfts, collectionName) in filteredCollections" :key="collectionName" class="wallet-section">
+            <div class="wallet-header" @click="toggleCollection(collectionName)">
+              <div class="header-content">
+                <span class="collapse-arrow" :class="{ 'collapsed': collapsedCollections[collectionName] }">
+                  ▼
+                </span>
+                <span class="wallet-label">{{ collectionName }}</span>
+                <div class="collection-stats">
+                  <span class="stat-item">
+                    <span class="stat-label">NFTs:</span>
+                    {{ nfts.length }}
+                  </span>
+                  <span class="stat-item">
+                    <span class="stat-label">Floor:</span>
+                    {{ nfts[0]?.collection_stats?.current_floor_1h || 0 }} $SEI
+                  </span>
+                  <span class="stat-item">
+                    <span class="stat-label">Volume:</span>
+                    {{ formatNumber(nfts[0]?.collection_stats?.current_volume_1h) }} $SEI
+                  </span>
+                  <span class="stat-item">
+                    <span class="stat-label">Owners:</span>
+                    {{ nfts[0]?.collection_stats?.current_owners_1h || 0 }}
+                  </span>
+                  <span class="stat-item">
+                    <span class="stat-label">Listings:</span>
+                    {{ nfts[0]?.collection_stats?.current_auction_count_1h || 0 }}
+                  </span>
                 </div>
-                <div v-if="nft.rarity_rank" class="rarity-rank">
-                  Rank: #{{ nft.rarity_rank }}
+              </div>
+            </div>
+            
+            <div class="nft-container" v-show="!collapsedCollections[collectionName]">
+              <div class="nft-grid">
+                <div v-for="nft in nfts" :key="nft.name" class="nft-card" :class="{ 'selected': selectedNft === nft }" @click="(event) => selectNft(nft, event)">
+                  <img :src="nft.image" :alt="nft.name" class="nft-image">
+                  <div class="nft-info">
+                    <span class="nft-name">{{ nft.name }}</span>
+                    <div v-if="nft.collection_stats" class="floor-price">
+                      Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
+                    </div>
+                    <div v-if="nft.rarity_rank" class="rarity-rank">
+                      Rank: #{{ nft.rarity_rank }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -63,80 +129,27 @@
         </div>
       </div>
     </div>
-
-    <!-- Collection View -->
-    <div v-else>
-      <div v-for="(nfts, collectionName) in filteredCollections" :key="collectionName" class="wallet-section">
-        <div class="wallet-header" @click="toggleCollection(collectionName)">
-          <div class="header-content">
-            <span class="collapse-arrow" :class="{ 'collapsed': collapsedCollections[collectionName] }">
-              ▼
-            </span>
-            <span class="wallet-label">{{ collectionName }}</span>
-            <div class="collection-stats">
-              <span class="stat-item">
-                <span class="stat-label">NFTs:</span>
-                {{ nfts.length }}
-              </span>
-              <span class="stat-item">
-                <span class="stat-label">Floor:</span>
-                {{ nfts[0]?.collection_stats?.current_floor_1h || 0 }} $SEI
-              </span>
-              <span class="stat-item">
-                <span class="stat-label">Volume:</span>
-                {{ formatNumber(nfts[0]?.collection_stats?.current_volume_1h) }} $SEI
-              </span>
-              <span class="stat-item">
-                <span class="stat-label">Owners:</span>
-                {{ nfts[0]?.collection_stats?.current_owners_1h || 0 }}
-              </span>
-              <span class="stat-item">
-                <span class="stat-label">Listings:</span>
-                {{ nfts[0]?.collection_stats?.current_auction_count_1h || 0 }}
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="nft-container" v-show="!collapsedCollections[collectionName]">
-          <div class="nft-grid">
-            <div v-for="nft in nfts" :key="nft.name" class="nft-card" :class="{ 'selected': selectedNft === nft }" @click="(event) => selectNft(nft, event)">
-              <img :src="nft.image" :alt="nft.name" class="nft-image">
-              <div class="nft-info">
-                <span class="nft-name">{{ nft.name }}</span>
-                <div v-if="nft.collection_stats" class="floor-price">
-                  Floor: {{ nft.collection_stats.current_floor_1h }} $SEI
-                </div>
-                <div v-if="nft.rarity_rank" class="rarity-rank">
-                  Rank: #{{ nft.rarity_rank }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div v-else class="access-denied">
+      <h2>Access Denied</h2>
+      <p>You need to own a Warp Boi or Trek Access Chit to view this page.</p>
     </div>
-  </div>
-  <div v-else class="access-denied">
-    <h2>Access Denied</h2>
-    <p>You need to own a Warp Boi or Trek Access Chit to view this page.</p>
-  </div>
-  <div v-if="selectedNft" class="nft-popup" :style="popupStyle">
-    <div class="popup-content">
-      <h3>Actions</h3>
-      <div class="marketplace-links">
-        <a href="#" @click.prevent="openPallet(selectedNft)" class="marketplace-link">
-          List on Pallet
-        </a>
-        <a href="#" @click.prevent="tweetNft(selectedNft)" class="marketplace-link">
-          Tweet about this NFT
-        </a>
-        <a href="#" @click.prevent="viewOnSeitrace(selectedNft)" class="marketplace-link">
-          View Token via Contract
-        </a>
-        <a href="#" @click.prevent="copyWalletAddress(selectedNft)" class="marketplace-link">
-          {{ copyButtonText }}
-        </a>
+    <div v-if="selectedNft" class="nft-popup" :style="popupStyle">
+      <div class="popup-content">
+        <h3>Actions</h3>
+        <div class="marketplace-links">
+          <a href="#" @click.prevent="openPallet(selectedNft)" class="marketplace-link">
+            List on Pallet
+          </a>
+          <a href="#" @click.prevent="tweetNft(selectedNft)" class="marketplace-link">
+            Tweet about this NFT
+          </a>
+          <a href="#" @click.prevent="viewOnSeitrace(selectedNft)" class="marketplace-link">
+            View Token via Contract
+          </a>
+          <a href="#" @click.prevent="copyWalletAddress(selectedNft)" class="marketplace-link">
+            {{ copyButtonText }}
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -152,6 +165,14 @@ export default {
   name: 'NftAnalysis',
   props: {
     walletAddress: String,
+    walletConnected: Boolean,
+    evmAddress: String,
+    hasAccess: Boolean,
+    nftStatus: String,
+    warpTokenBalance: {
+      type: Number,
+      default: 0
+    },
     warpBoisCount: {
       type: Number,
       default: 0
@@ -255,19 +276,12 @@ export default {
       return `${address.slice(0, 4)}...${address.slice(-4)}`
     },
     async fetchLinkedWallets() {
-      // Check cache first
-      const cachedData = sessionStorage.getItem('nftAnalysisCache')
-      if (cachedData && this.isDataCached) {
-        console.log('Loading from cache')
-        const parsed = JSON.parse(cachedData)
-        this.linkedWallets = parsed.linkedWallets
-        this.collapsedWallets = parsed.collapsedWallets
-        this.viewMode = parsed.viewMode
-        this.searchQuery = parsed.searchQuery
-        return
-      }
-
+      this.loading = true
+      this.error = null
+      
       try {
+        console.log('Fetching wallets for address:', this.walletAddress) // Debug log
+        
         const { data, error } = await supabase
           .from('linked_wallets')
           .select('*')
@@ -275,7 +289,8 @@ export default {
 
         if (error) throw error
 
-        // Initialize NFTs array for each wallet
+        console.log('Linked wallets data:', data) // Debug log
+
         this.linkedWallets = data.map(wallet => ({
           ...wallet,
           nfts: []
@@ -542,6 +557,11 @@ export default {
 </script>
 
 <style scoped>
+.nft-analysis-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .nft-analysis {
   padding: 20px;
   max-width: 1200px;

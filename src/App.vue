@@ -277,6 +277,22 @@ export default {
           console.error('Error inserting unique wallet:', uniqueError)
         }
 
+        // Update the label for primary wallet if it's empty
+        const { error: labelError } = await supabase
+          .from('linked_wallets')
+          .update({ label: 'Primary Wallet' })
+          .match({
+            control_sei_hash: this.walletAddress,
+            sei_hash: this.walletAddress,
+            control_evm_hash: this.evmAddress,
+            evm_hash: this.evmAddress,
+            label: ''
+          })
+
+        if (labelError) {
+          console.error('Error updating primary wallet label:', labelError)
+        }
+
         // Always log the login attempt
         const { error: loginError } = await supabase
           .from('wallet_connections')
