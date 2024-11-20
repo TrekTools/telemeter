@@ -106,6 +106,7 @@
 <script>
 import supabase from '../supabase'
 import ValueSummaryTiles from '@/components/ValueSummaryTiles.vue'
+import { mapState } from 'vuex'
 
 export default {
   name: 'PortfolioAnalysis',
@@ -133,6 +134,10 @@ export default {
     evmAddress: {
       type: String,
       required: true
+    },
+    excludeControlWallet: {
+      type: Boolean,
+      default: false
     }
   },
 
@@ -154,6 +159,16 @@ export default {
   },
 
   computed: {
+    ...mapState({
+      excludedWallets: state => state.preferences.excludedWallets
+    }),
+
+    filteredWallets() {
+      return this.linkedWallets.filter(wallet => 
+        !this.excludedWallets.has(wallet.uuid)
+      )
+    },
+
     tokensWithPrices() {
       return this.tokens.map(token => {
         const priceEntry = this.prices[token.address?.toLowerCase()]
@@ -509,8 +524,14 @@ export default {
 
         if (linkedWalletsData.error) throw linkedWalletsData.error
         
-        // Create an array of promises for fetching tokens from all wallets
-        const tokenPromises = linkedWalletsData.data.flatMap(wallet => [
+        // Set linkedWallets immediately after fetching
+        this.linkedWallets = linkedWalletsData.data
+        
+        // Then use filteredWallets computed property for processing
+        const walletsToProcess = this.filteredWallets
+        
+        // Create an array of promises for fetching tokens from filtered wallets
+        const tokenPromises = walletsToProcess.flatMap(wallet => [
           this.fetchTokens(wallet.evm_hash, 'ERC-20'),
           this.fetchTokens(wallet.sei_hash, 'CW-20'),
           this.fetchTokens(wallet.sei_hash, 'NATIVE')
@@ -521,8 +542,8 @@ export default {
 
         // Process and combine all tokens
         this.tokens = allTokenResults.flatMap((tokens, index) => {
-          const walletIndex = Math.floor(index / 3) // Determine which wallet these tokens belong to
-          const wallet = linkedWalletsData.data[walletIndex]
+          const walletIndex = Math.floor(index / 3)
+          const wallet = walletsToProcess[walletIndex]
           const tokenType = ['ERC-20', 'CW-20', 'NATIVE'][index % 3]
           const walletAddress = tokenType === 'ERC-20' ? wallet.evm_hash : wallet.sei_hash
 
@@ -535,18 +556,25 @@ export default {
           }))
         })
 
-        // Fetch NFTs for each wallet
-        const walletsWithNfts = await Promise.all(
-          linkedWalletsData.data.map(async wallet => ({
+        // Update NFTs for filtered wallets
+        const nftPromises = walletsToProcess.map(async wallet => {
+          const nfts = await this.fetchNFTsForWallet(wallet)
+          return {
             ...wallet,
-            nfts: await this.fetchNFTsForWallet(wallet)
-          }))
-        )
+            nfts
+          }
+        })
 
-        this.linkedWallets = walletsWithNfts
+        const walletsWithNfts = await Promise.all(nftPromises)
+        
+        // Update the existing wallets with their NFT data
+        this.linkedWallets = this.linkedWallets.map(wallet => {
+          const walletWithNfts = walletsWithNfts.find(w => w.uuid === wallet.uuid)
+          return walletWithNfts || wallet
+        })
 
-        // Fetch delegations for all wallets
-        const delegationsPromises = linkedWalletsData.data.map(wallet => 
+        // Fetch delegations for filtered wallets
+        const delegationsPromises = walletsToProcess.map(wallet => 
           fetch(`https://rest.wallet.pacific-1.sei.io/cosmos/staking/v1beta1/delegations/${wallet.sei_hash}`)
             .then(res => res.json())
             .then(data => data.delegation_responses?.map(item => ({
@@ -601,6 +629,15 @@ export default {
       handler(newValue) {
         this.$emit('token-value-update', newValue)
       }
+    },
+    excludeControlWallet() {
+      this.fetchAllData()
+    },
+    excludedWallets: {
+      handler() {
+        this.fetchAllData()
+      },
+      deep: true
     }
   },
 

@@ -165,6 +165,14 @@ export default {
       } else if (newCount === 0) {
         this.activeWarpBoi = null
       }
+    },
+    walletAddress: {
+      immediate: true,
+      async handler(newAddress) {
+        if (newAddress) {
+          await this.$store.dispatch('initializePreferences', newAddress)
+        }
+      }
     }
   },
   methods: {

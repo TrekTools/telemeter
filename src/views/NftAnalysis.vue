@@ -158,6 +158,7 @@
 <script>
 import supabase from '../supabase'
 import { inject } from 'vue'
+import { mapState } from 'vuex'
 
 const HASURA_ENDPOINT = process.env.VUE_APP_GRAPHQL_ENDPOINT // Add this to your .env
 
@@ -202,18 +203,20 @@ export default {
       return this.warpBoisCount > 0 || this.tacCount > 0;
     },
     filteredWallets() {
-      if (!this.searchQuery) return this.linkedWallets
+      let wallets = this.linkedWallets.filter(wallet => 
+        !this.excludedWallets.has(wallet.uuid)
+      )
+
+      if (!this.searchQuery) return wallets
 
       const query = this.searchQuery.toLowerCase()
-      return this.linkedWallets.filter(wallet => {
-        // Search in wallet details
+      return wallets.filter(wallet => {
         const walletMatches = (
           (wallet.label && wallet.label.toLowerCase().includes(query)) ||
           wallet.sei_hash.toLowerCase().includes(query) ||
           (wallet.evm_hash && wallet.evm_hash.toLowerCase().includes(query))
         )
 
-        // Search in NFT names
         const nftMatches = wallet.nfts?.some(nft => 
           nft.name.toLowerCase().includes(query)
         )
@@ -222,9 +225,8 @@ export default {
       })
     },
     groupedByCollection() {
-      const allNfts = this.linkedWallets.flatMap(wallet => wallet.nfts || [])
+      const allNfts = this.filteredWallets.flatMap(wallet => wallet.nfts || [])
       return allNfts.reduce((groups, nft) => {
-        // Use the name from collection_stats (GQL response)
         const collectionName = nft.collection_stats?.name || nft.collection?.name || 'Unknown Collection'
         if (!groups[collectionName]) {
           groups[collectionName] = []
@@ -241,10 +243,8 @@ export default {
       const filtered = {}
 
       Object.entries(collections).forEach(([collectionName, nfts]) => {
-        // Search in collection name
         const collectionMatches = collectionName.toLowerCase().includes(query)
         
-        // Search in NFT names
         const filteredNfts = nfts.filter(nft => 
           nft.name.toLowerCase().includes(query)
         )
@@ -257,7 +257,7 @@ export default {
       return filtered
     },
     totalNftValue() {
-      return this.linkedWallets.reduce((total, wallet) => {
+      return this.filteredWallets.reduce((total, wallet) => {
         const walletValue = parseFloat(this.calculateWalletValue(wallet.nfts))
         return total + walletValue
       }, 0)
@@ -268,7 +268,10 @@ export default {
         left: `${this.popupPosition.x}px`,
         top: `${this.popupPosition.y}px`
       }
-    }
+    },
+    ...mapState({
+      excludedWallets: state => state.preferences.excludedWallets
+    })
   },
   methods: {
     truncateAddress(address) {
@@ -280,28 +283,19 @@ export default {
       this.error = null
       
       try {
-        console.log('Fetching wallets for address:', this.walletAddress) // Debug log
-        
         const { data, error } = await supabase
           .from('linked_wallets')
           .select('*')
           .eq('control_sei_hash', this.walletAddress)
-
+        
         if (error) throw error
-
-        console.log('Linked wallets data:', data) // Debug log
-
-        this.linkedWallets = data.map(wallet => ({
-          ...wallet,
-          nfts: []
-        }))
-
-        // Fetch NFTs for each wallet
+        
+        this.linkedWallets = data
+        
         await Promise.all(
           this.linkedWallets.map(wallet => this.fetchNFTsForWallet(wallet))
         )
 
-        // Cache the data after fetching
         this.cacheData()
         this.isDataCached = true
       } catch (error) {
@@ -319,13 +313,10 @@ export default {
         const data = await response.json()
         
         if (data.nfts && data.nfts.length > 0) {
-          // Get unique EVM addresses
           const uniqueAddresses = [...new Set(data.nfts.map(nft => nft.collection?.evm_address))]
           
-          // Fetch all collection stats in one query
           const collectionStats = await this.fetchCollectionStats(uniqueAddresses)
 
-          // Create a map using EVM address as key
           const statsMap = {}
           collectionStats.forEach(stats => {
             if (stats && stats.evm_address) {
@@ -333,17 +324,15 @@ export default {
             }
           })
 
-          // Enrich NFT data with collection stats and rarity
           const enrichedNFTs = data.nfts.map(nft => {
             const stats = statsMap[nft.collection?.evm_address]
             return {
               ...nft,
               collection_stats: stats || null,
-              rarity_rank: nft.rarity?.rank // Add rarity rank from Pallet response
+              rarity_rank: nft.rarity?.rank
             }
           })
 
-          // Update the wallet's NFTs
           const walletIndex = this.linkedWallets.findIndex(w => w.sei_hash === wallet.sei_hash)
           if (walletIndex !== -1) {
             this.linkedWallets[walletIndex].nfts = enrichedNFTs
@@ -415,7 +404,6 @@ export default {
       if (!nfts) return '0'
       
       const total = nfts.reduce((sum, nft) => {
-        // Make sure we're accessing the correct property path
         const floor = parseFloat(nft.collection_stats?.current_floor_1h) || 0
         return sum + floor
       }, 0)
@@ -445,7 +433,6 @@ export default {
     changeViewMode(mode) {
       if (mode === 'wallet' || mode === 'collection') {
         this.viewMode = mode
-        // Update cache
         this.cacheData()
       }
     },
@@ -541,6 +528,12 @@ export default {
           this.fetchLinkedWallets()
         }
       }
+    },
+    excludedWallets: {
+      handler() {
+        this.cacheData()
+      },
+      deep: true
     }
   },
   updated() {

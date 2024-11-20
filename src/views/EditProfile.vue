@@ -54,7 +54,8 @@
               <th>SEI Address</th>
               <th>EVM Address</th>
               <th>Added</th>
-              <th>Actions</th>
+              <th>Include in Analytics</th>
+              <th>Remove</th>
             </tr>
           </thead>
           <tbody>
@@ -83,6 +84,16 @@
               <td>{{ truncateAddress(wallet.sei_hash) }}</td>
               <td>{{ truncateAddress(wallet.evm_hash) }}</td>
               <td>{{ new Date(wallet.timestamp).toLocaleString() }}</td>
+              <td>
+                <label class="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    :checked="!isWalletExcluded(wallet.uuid)"
+                    @change="toggleWalletExclusion(wallet.uuid)"
+                  >
+                  <span class="toggle-slider"></span>
+                </label>
+              </td>
               <td>
                 <button 
                   @click="deleteLinkedWallet(wallet.uuid)"
@@ -130,6 +141,18 @@
         </button>
       </div>
     </div>
+
+    <div class="toggle-group">
+      <label class="toggle-switch">
+        <input 
+          type="checkbox" 
+          :checked="!isWalletExcluded(controlWalletUuid)"
+          @change="toggleWalletExclusion(controlWalletUuid)"
+        >
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="toggle-label">Include control wallet in Analytics</span>
+    </div>
   </div>
   <div v-else class="access-denied">
     <h2>Access Denied</h2>
@@ -140,6 +163,7 @@
 <script>
 import supabase from '../supabase'  // Import shared instance
 import { v4 as uuidv4 } from 'uuid'
+import { mapState } from 'vuex'
 
 export default {
   name: 'EditProfile',
@@ -179,10 +203,11 @@ export default {
         { name: 'Cyan', value: 'cyan' },
         { name: 'Gold', value: 'gold' },
         { name: 'White', value: 'white' }
-      ]
+      ],
     }
   },
   async created() {
+    await this.$store.dispatch('initializePreferences', this.walletAddress)
     await this.loadLinkedWallets()
     await this.checkAndAddControlWallet()
     await this.loadSocialConnections()
@@ -196,6 +221,16 @@ export default {
     },
     isValidTwitter() {
       return this.twitterHandle && /^@?(\w){1,15}$/.test(this.twitterHandle)
+    },
+    ...mapState({
+      excludedWallets: state => state.preferences.excludedWallets
+    }),
+    
+    controlWalletUuid() {
+      const controlWallet = this.linkedWallets.find(
+        wallet => wallet.sei_hash === this.walletAddress
+      )
+      return controlWallet?.uuid
     }
   },
   methods: {
@@ -531,6 +566,21 @@ export default {
       
       // Store theme preference (optional)
       localStorage.setItem('preferred-theme', color)
+    },
+    async toggleWalletExclusion(walletUuid) {
+      if (!walletUuid) return
+
+      try {
+        await this.$store.dispatch('updateWalletExclusion', {
+          walletUuid,
+          excluded: !this.isWalletExcluded(walletUuid)
+        })
+      } catch (error) {
+        this.showToast('Failed to update preference')
+      }
+    },
+    isWalletExcluded(walletUuid) {
+      return this.excludedWallets.has(walletUuid)
     }
   },
   mounted() {
@@ -929,5 +979,65 @@ td {
 .theme-btn.active {
   border-color: #ffffff;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #2c2c2c;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #42b983;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+.toggle-label {
+  color: #ffffff;
+  font-size: 0.9em;
 }
 </style> 
