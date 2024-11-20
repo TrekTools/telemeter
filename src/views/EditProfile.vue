@@ -20,6 +20,18 @@
       <h2>Manage Wallets</h2>
       <span class="toggle-icon">{{ isWalletManagerOpen ? '▼' : '▶' }}</span>
     </div>
+
+    <div class="toggle-group">
+      <label class="toggle-switch">
+        <input 
+          type="checkbox" 
+          :checked="!isWalletExcluded(controlWalletUuid)"
+          @change="toggleWalletExclusion(controlWalletUuid)"
+        >
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="toggle-label">Include control wallet in Analytics</span>
+    </div>
     
     <div class="wallet-manager" v-show="isWalletManagerOpen">
       <div class="wallet-input-group">
@@ -140,18 +152,6 @@
           <span class="coming-soon-badge">Coming Soon</span>
         </button>
       </div>
-    </div>
-
-    <div class="toggle-group">
-      <label class="toggle-switch">
-        <input 
-          type="checkbox" 
-          :checked="!isWalletExcluded(controlWalletUuid)"
-          @change="toggleWalletExclusion(controlWalletUuid)"
-        >
-        <span class="toggle-slider"></span>
-      </label>
-      <span class="toggle-label">Include control wallet in Analytics</span>
     </div>
   </div>
   <div v-else class="access-denied">
@@ -600,7 +600,7 @@ export default {
 
 .edit-profile {
   padding: 20px;
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -695,10 +695,13 @@ export default {
 
 .linked-wallets {
   margin-top: 20px;
+  overflow-x: auto;
+  padding-bottom: 10px;
 }
 
-table {
+.linked-wallets table {
   width: 100%;
+  min-width: 1000px;
   border-collapse: collapse;
   margin-top: 10px;
   background-color: #1a1a1a;
