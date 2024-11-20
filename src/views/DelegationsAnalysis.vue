@@ -86,6 +86,7 @@
 
 <script>
 import supabase from '../supabase'
+import { mapState } from 'vuex'
 
 export default {
   name: 'DelegationsAnalysis',
@@ -125,12 +126,22 @@ export default {
   },
 
   computed: {
+    ...mapState({
+      excludedWallets: state => state.preferences.excludedWallets
+    }),
+
     hasRequiredNFT() {
       return this.warpBoisCount > 0 || this.tacCount > 0
     },
     
+    filteredWallets() {
+      return this.linkedWallets.filter(wallet => 
+        !this.excludedWallets.has(wallet.uuid)
+      )
+    },
+
     totalDelegationAmount() {
-      return this.delegations.reduce((sum, delegation) => {
+      return this.filteredDelegations.reduce((sum, delegation) => {
         if (delegation.denom === 'usei') {
           return sum + (parseFloat(delegation.amount) / 1000000)
         }
@@ -138,8 +149,17 @@ export default {
       }, 0)
     },
 
+    filteredDelegations() {
+      return this.delegations.filter(delegation => {
+        const wallet = this.linkedWallets.find(w => 
+          w.sei_hash === delegation.delegatorAddress
+        )
+        return wallet && !this.excludedWallets.has(wallet.uuid)
+      })
+    },
+
     filteredAndSortedDelegations() {
-      let result = [...this.delegations]
+      let result = [...this.filteredDelegations]
       
       // Apply search filter
       if (this.searchQuery.trim()) {
@@ -156,7 +176,6 @@ export default {
         let aVal = a[this.sortKey]
         let bVal = b[this.sortKey]
         
-        // Convert string numbers to floats for proper sorting
         if (this.sortKey === 'amount' || this.sortKey === 'shares') {
           aVal = parseFloat(aVal)
           bVal = parseFloat(bVal)
@@ -209,25 +228,25 @@ export default {
         if (this.walletAddress.startsWith('sei')) {
           query = supabase
             .from('linked_wallets')
-            .select('sei_hash, label')
+            .select('sei_hash, label, uuid')
             .eq('control_sei_hash', this.walletAddress)
         } else if (this.walletAddress.startsWith('0x')) {
           query = supabase
             .from('linked_wallets')
-            .select('sei_hash, label')
+            .select('sei_hash, label, uuid')
             .eq('control_evm_hash', this.walletAddress)
         }
 
         const { data, error } = await query
         if (error) throw error
 
-        // Create a map of sei_hash to labels
+        this.linkedWallets = data
         this.walletLabels = data.reduce((acc, wallet) => {
           acc[wallet.sei_hash] = wallet.label || this.truncateAddress(wallet.sei_hash)
           return acc
         }, {})
 
-        return data
+        return this.filteredWallets
       } catch (error) {
         console.error('Error fetching linked wallets:', error)
         this.error = 'Failed to fetch wallet data'
@@ -358,6 +377,12 @@ export default {
         console.log('Emitting delegation value:', newValue) // Debug log
         this.$emit('delegation-value-update', newValue)
       }
+    },
+    excludedWallets: {
+      handler() {
+        this.fetchAllDelegations()
+      },
+      deep: true
     }
   }
 }
