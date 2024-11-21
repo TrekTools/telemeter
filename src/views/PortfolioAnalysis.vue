@@ -1,5 +1,5 @@
 <template>
-  <div v-if="hasAccess" class="portfolio-analysis">
+  <div v-if="hasRequiredAccess" class="portfolio-analysis">
     <h1>Portfolio</h1>
     
     <ValueSummaryTiles 
@@ -115,15 +115,15 @@ export default {
   },
   
   props: {
-    hasAccess: {
-      type: Boolean,
-      required: true
-    },
     warpBoisCount: {
       type: Number,
       default: 0
     },
     tacCount: {
+      type: Number,
+      default: 0
+    },
+    warpTokenBalance: {
       type: Number,
       default: 0
     },
@@ -289,6 +289,13 @@ export default {
     },
     delegationValue() {
       return this.totalDelegationAmount * this.seiUsdPrice
+    },
+    hasRequiredAccess() {
+      return (
+        this.warpBoisCount > 0 || 
+        this.tacCount > 0 || 
+        this.warpTokenBalance >= 1000000
+      )
     }
   },
 
@@ -642,7 +649,7 @@ export default {
   },
 
   mounted() {
-    if (this.hasAccess && this.walletAddress) {
+    if (this.hasRequiredAccess && this.walletAddress) {
       this.fetchAllData()
     }
     // Emit initial token value

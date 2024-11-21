@@ -80,28 +80,48 @@ export default {
       })
     },
     async fetchNFTs() {
-      console.log('Attempting to fetch NFTs for address:', this.walletAddress)
-      if (this.walletAddress) {
-        try {
-          const response = await fetch(`https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true&include_bids=true`);
-          const data = await response.json();
-          
-          if (data.nfts) {
-            console.log('Fetched NFTs:', data.nfts)
-            this.nftList = data.nfts;
-          }
-        } catch (error) {
-          console.error('Error fetching NFTs:', error);
+      try {
+        const response = await fetch(
+          `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true&include_bids=true&fetch_nfts=true`
+        )
+
+        // Handle 404 and other error status codes gracefully
+        if (!response.ok) {
+          console.log(`No NFTs found or API error (${response.status}), skipping NFT conveyor`)
+          this.nftList = []
+          return
         }
+
+        // Try to parse JSON only if we got a successful response
+        try {
+          const data = await response.json()
+          this.nftList = data.nfts?.filter(nft => 
+            nft.collection_address === import.meta.env.VITE_WARP_BOIS_ADDRESS ||
+            nft.collection_address === import.meta.env.VITE_TAC_ADDRESS
+          ) || []
+        } catch (jsonError) {
+          console.log('Invalid JSON response from Pallet API, skipping NFT conveyor')
+          this.nftList = []
+        }
+
+      } catch (error) {
+        console.log('Error fetching NFTs for conveyor:', error)
+        this.nftList = []
       }
     }
   },
   watch: {
     walletAddress: {
       immediate: true,
-      handler(newVal) {
-        console.log('Wallet address changed:', newVal)
-        this.fetchNFTs()
+      handler(newAddress) {
+        if (newAddress) {
+          this.fetchNFTs().catch(error => {
+            console.log('Failed to fetch NFTs for conveyor:', error)
+            this.nftList = []
+          })
+        } else {
+          this.nftList = []
+        }
       }
     },
     isConnected(newVal) {

@@ -53,7 +53,7 @@
         <div v-if="warpBoisCount > 0" class="status-row">
           Warp Boi holder! 👾 <span class="nft-count">Warp Bois: {{ warpBoisCount }}</span>
         </div>
-        <div v-if="warpTokenBalance > 0" class="status-row">
+        <div v-if="warpTokenBalance >= 1000000" class="status-row">
           $WARP holder! 💎 <span class="nft-count">$WARP: {{ formatWarpBalance(warpTokenBalance) }}</span>
         </div>
         <div v-if="tacCount > 0" class="status-row">
@@ -127,6 +127,15 @@ export default {
       isTerminalOpen: !this.isMobile(),
     }
   },
+  computed: {
+    hasAccess() {
+      return (
+        this.warpBoisCount > 0 || 
+        this.tacCount > 0 || 
+        this.warpTokenBalance >= 1000000
+      )
+    }
+  },
   methods: {
     handleWalletAction() {
       if (this.walletConnected) {
@@ -143,11 +152,11 @@ export default {
       return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
     },
     formatWarpBalance(balance) {
-      if (!balance) return '0';
+      if (!balance) return '0'
       return balance.toLocaleString(undefined, {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
-      });
+      })
     }
   },
   mounted() {

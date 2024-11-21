@@ -1,5 +1,5 @@
 <template>
-  <div class="warp-token">
+  <div v-if="hasRequiredAccess" class="warp-token">
     <h1>$WARP Token Analytics</h1>
     
     <a 
@@ -77,6 +77,31 @@ ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineEleme
 export default {
   name: 'WarpToken',
   components: { Line, Pie },
+  
+  props: {
+    warpBoisCount: {
+      type: Number,
+      default: 0
+    },
+    tacCount: {
+      type: Number,
+      default: 0
+    },
+    warpTokenBalance: {
+      type: Number,
+      default: 0
+    }
+  },
+  
+  computed: {
+    hasRequiredAccess() {
+      return (
+        this.warpBoisCount > 0 || 
+        this.tacCount > 0 || 
+        this.warpTokenBalance >= 1000000
+      );
+    }
+  },
   
   data() {
     return {

@@ -177,6 +177,10 @@ export default {
     tacCount: {             // Add this prop
       type: Number,
       default: 0
+    },
+    warpTokenBalance: {
+      type: Number,
+      default: 0
     }
   },
   data() {
@@ -214,7 +218,7 @@ export default {
   },
   computed: {
     hasRequiredNFT() {
-      return this.warpBoisCount > 0 || this.tacCount > 0;
+      return this.warpBoisCount > 0 || this.tacCount > 0 || this.warpTokenBalance >= 1000000;
     },
     isValidDiscord() {
       return this.discordUsername && /^.{3,32}#[0-9]{4}$/.test(this.discordUsername)

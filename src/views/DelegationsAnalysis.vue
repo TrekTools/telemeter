@@ -107,6 +107,10 @@ export default {
     tacCount: {
       type: Number,
       default: 0
+    },
+    warpTokenBalance: {
+      type: Number,
+      default: 0
     }
   },
   
@@ -131,7 +135,7 @@ export default {
     }),
 
     hasRequiredNFT() {
-      return this.warpBoisCount > 0 || this.tacCount > 0
+      return this.warpBoisCount > 0 || this.tacCount > 0 || this.warpTokenBalance >= 1000000;
     },
     
     filteredWallets() {

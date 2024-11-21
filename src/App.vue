@@ -5,10 +5,8 @@
         :wallet-connected="isConnected"
         :wallet-address="walletAddress"
         :evm-address="evmAddress"
-        :has-access="hasAppAccess"
         :warp-bois-count="Number(warpBoisCount)"
         :tac-count="Number(tacCount)"
-        :nft-status="nftStatus"
         :warp-token-balance="warpTokenBalance"
         @connect-wallet="handleConnect"
         @disconnect-wallet="disconnectWallet"
@@ -51,7 +49,7 @@
           </div>
 
           <!-- Protected routes only shown when NFTs are owned -->
-          <template v-if="warpBoisCount > 0 || tacCount > 0">
+          <template v-if="hasAppAccess">
             <router-link to="/portfolio" class="nav-link">Portfolio</router-link>
             <router-link to="/delegations" class="nav-link">Delegations</router-link>
             <router-link to="/nft" class="nav-link">NFT Analysis</router-link>
@@ -80,7 +78,7 @@
               <router-link to="/guide" class="drawer-link" @click="closeDrawer">Guide</router-link>
               
               <!-- Protected routes in drawer -->
-              <template v-if="warpBoisCount > 0 || tacCount > 0">
+              <template v-if="hasAppAccess">
                 <router-link to="/portfolio" class="drawer-link" @click="closeDrawer">Portfolio</router-link>
                 <router-link to="/delegations" class="drawer-link" @click="closeDrawer">Delegations</router-link>
                 <router-link to="/nft" class="drawer-link" @click="closeDrawer">NFT Analysis</router-link>
@@ -191,19 +189,39 @@ export default {
         this.walletAddress = accounts[0].address;
         this.isConnected = true;
         
-        // Replace seitrace with Pallet API
+        // Try Pallet first, then fallback to seitrace
         try {
           const palletResponse = await fetch(
             `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_estimated_value=true`
           );
-          const palletData = await palletResponse.json();
-          this.evmAddress = palletData.evm_address;
-          console.log('EVM address from Pallet:', this.evmAddress);
+
+          if (palletResponse.status === 404) {
+            // Pallet returned 404, try seitrace
+            console.log('No Pallet data found, checking seitrace...');
+            const seitraceResponse = await fetch(
+              `https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.walletAddress}`
+            );
+
+            if (seitraceResponse.ok) {
+              const seitraceData = await seitraceResponse.json();
+              if (seitraceData.association?.evm_hash) {
+                this.evmAddress = seitraceData.association.evm_hash;
+                console.log('Found EVM address from seitrace:', this.evmAddress);
+              }
+            }
+          } else if (palletResponse.ok) {
+            // Pallet request succeeded
+            const palletData = await palletResponse.json();
+            this.evmAddress = palletData.evm_address;
+            console.log('EVM address from Pallet:', this.evmAddress);
+          }
           
-          // Add this: Check WARP balance after getting EVM address
-          await this.checkWarpBalance();
+          // Check WARP balance after getting EVM address
+          if (this.evmAddress) {
+            await this.checkWarpBalance();
+          }
         } catch (error) {
-          console.error('Error fetching EVM address from Pallet:', error);
+          console.log('Error fetching EVM address:', error);
         }
 
         // Add longer delay for mobile
@@ -375,29 +393,43 @@ export default {
       }
     },
     async checkWarpBalance() {
-      if (!this.evmAddress) return 0;
+      if (!this.evmAddress) {
+        console.log('No EVM address available for WARP balance check')
+        return 0
+      }
       
       try {
-        const response = await fetch(`https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.evmAddress}/tokens?type=ERC-20`);
-        const data = await response.json();
+        const response = await fetch(
+          `https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.evmAddress}/tokens?type=ERC-20`
+        )
+        
+        if (!response.ok) {
+          console.log(`Seitrace API error: ${response.status}`)
+          return 0
+        }
+
+        const data = await response.json()
         
         // Find WARP token in the response
         const warpToken = data.items.find(item => 
           item.token.address.toLowerCase() === this.WARP_CONTRACT_ADDRESS.toLowerCase()
-        );
+        )
         
         if (warpToken) {
           // Get value and consider decimals (6 for WARP token)
-          this.warpTokenBalance = Number(warpToken.value) / 1e6;
-          console.log('WARP balance:', this.warpTokenBalance);
+          const balance = Number(warpToken.value) / 1e6
+          this.warpTokenBalance = balance
+          console.log('WARP balance:', balance)
         } else {
-          this.warpTokenBalance = 0;
+          console.log('No WARP token found in wallet')
+          this.warpTokenBalance = 0
         }
         
-        return this.warpTokenBalance;
+        return this.warpTokenBalance
       } catch (error) {
-        console.error('Error fetching WARP balance:', error);
-        return 0;
+        console.log('Error fetching WARP balance:', error)
+        this.warpTokenBalance = 0
+        return 0
       }
     }
   },
@@ -416,20 +448,12 @@ export default {
   },
   computed: {
     hasAppAccess() {
-      // Check if user has any of: Warp Boi, TAC, or minimum WARP tokens
-      const hasWarpBoi = this.warpBoisCount > 0;
-      const hasTAC = this.tacCount > 0;
-      const hasWarpTokens = this.warpTokenBalance >= this.WARP_MINIMUM_BALANCE;
-      
-      console.log('Access Check:', {
-        warpBois: this.warpBoisCount,
-        tacs: this.tacCount,
-        warpBalance: this.warpTokenBalance,
-        minRequired: this.WARP_MINIMUM_BALANCE,
-        hasAccess: hasWarpBoi || hasTAC || hasWarpTokens
-      });
-
-      return hasWarpBoi || hasTAC || hasWarpTokens;
+      // Check if user has either NFTs or sufficient WARP balance
+      return (
+        this.warpBoisCount > 0 || 
+        this.tacCount > 0 || 
+        this.warpTokenBalance >= 1000000 // 1 million WARP
+      )
     }
   }
 }
