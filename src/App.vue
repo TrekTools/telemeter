@@ -40,6 +40,11 @@
           <router-link to="/about" class="nav-link">About</router-link>
           <router-link to="/guide" class="nav-link">Guide</router-link>
           
+          <!-- Add SEI price indicator -->
+          <div class="sei-price-indicator">
+            1 SEI = ${{ formatNumber(seiPrice, 4) }}
+          </div>
+
           <!-- Add terminal indicator -->
           <div v-if="terminalHidden" 
                class="terminal-indicator" 
@@ -136,6 +141,7 @@ export default {
       WARP_CONTRACT_ADDRESS: '0x921FaF220dcaf3E32FCd474d12C3892040DDe623',
       WARP_MINIMUM_BALANCE: 1000000,
       drawer: false, // Start closed
+      seiPrice: 0,
     }
   },
   created() {
@@ -145,6 +151,9 @@ export default {
     window.addEventListener('themeChanged', (e) => {
       this.currentTheme = `theme-${e.detail}`
     })
+    this.fetchSeiPrice()
+    // Optional: Update price every 5 minutes
+    setInterval(this.fetchSeiPrice, 300000)
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.checkMobile)
@@ -431,6 +440,23 @@ export default {
         this.warpTokenBalance = 0
         return 0
       }
+    },
+    async fetchSeiPrice() {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sei-network&vs_currencies=usd');
+        const data = await response.json();
+        this.seiPrice = data['sei-network'].usd;
+      } catch (error) {
+        console.error('Error fetching SEI price:', error);
+        this.seiPrice = 0;
+      }
+    },
+    formatNumber(num, decimals = 0) {
+      if (!num) return '0';
+      return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      }).format(num);
     }
   },
   setup() {
@@ -878,5 +904,16 @@ body {
 
 .v-application {
   background: transparent !important;
+}
+
+.sei-price-indicator {
+  background: rgba(255, 59, 59, 0.2);
+  color: #ff3b3b;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
 }
 </style>
