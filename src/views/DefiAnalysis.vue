@@ -10,44 +10,50 @@
       {{ error }}
     </div>
     
-    <div v-else class="defi-table-container">
-      <table class="defi-table">
-        <thead>
-          <tr>
-            <th class="text-center">Wallet Label</th>
-            <th class="text-center">Protocol</th>
-            <th class="text-center">Pool Name</th>
-            <th class="text-center">Pool Address</th>
-            <th class="text-center">Value ($USD)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="position in poolPositions" :key="position.id">
-            <td>{{ position.walletLabel }}</td>
-            <td>DragonSwap</td>
-            <td>{{ position.poolName || `${position.tokens?.[0]?.symbol || '-'}/${position.tokens?.[1]?.symbol || '-'}` }}</td>
-            <td>{{ truncateAddress(position.pool_address) }}</td>
-            <td>{{ formatNumber(position.first_token_amount, 2) }}</td>
-          </tr>
-          <tr v-for="position in jellyPositions" :key="position.id">
-            <td>{{ position.walletLabel }}</td>
-            <td>Jellyverse</td>
-            <td>{{ position.name }}</td>
-            <td>{{ truncateAddress(position.address) }}</td>
-            <td>{{ formatNumber(position.balance, 2) }}</td>
-          </tr>
-          <tr v-for="position in yeiPositions" :key="position.id">
-            <td>{{ position.walletLabel }}</td>
-            <td>YEI Finance</td>
-            <td>{{ position.name }}</td>
-            <td>{{ truncateAddress(position.underlyingAsset) }}</td>
-            <td>{{ formatNumber(position.balance, 2) }}</td>
-          </tr>
-          <tr v-if="poolPositions.length === 0 && jellyPositions.length === 0 && yeiPositions.length === 0">
-            <td colspan="5" class="no-data">No DeFi positions found</td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-else>
+      <div class="beta-notice">
+        ⓘ This section is still in Beta - not all positions, pools, or farms will show up
+      </div>
+      
+      <div class="defi-table-container">
+        <table class="defi-table">
+          <thead>
+            <tr>
+              <th class="text-center">Wallet Label</th>
+              <th class="text-center">Protocol</th>
+              <th class="text-center">Pool Name</th>
+              <th class="text-center">Pool Address</th>
+              <th class="text-center">Value ($USD)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="position in poolPositions" :key="position.id">
+              <td>{{ position.walletLabel }}</td>
+              <td>DragonSwap</td>
+              <td>{{ position.poolName || `${position.tokens?.[0]?.symbol || '-'}/${position.tokens?.[1]?.symbol || '-'}` }}</td>
+              <td>{{ truncateAddress(position.pool_address) }}</td>
+              <td>{{ formatNumber(position.first_token_amount, 2) }}</td>
+            </tr>
+            <tr v-for="position in jellyPositions" :key="position.id">
+              <td>{{ position.walletLabel }}</td>
+              <td>Jellyverse</td>
+              <td>{{ position.name }}</td>
+              <td>{{ truncateAddress(position.address) }}</td>
+              <td>{{ formatNumber(position.balance, 2) }}</td>
+            </tr>
+            <tr v-for="position in yeiPositions" :key="position.id">
+              <td>{{ position.walletLabel }}</td>
+              <td>YEI Finance</td>
+              <td>{{ position.name }}</td>
+              <td>{{ truncateAddress(position.underlyingAsset) }}</td>
+              <td>{{ formatNumber(position.balance, 2) }}</td>
+            </tr>
+            <tr v-if="poolPositions.length === 0 && jellyPositions.length === 0 && yeiPositions.length === 0">
+              <td colspan="5" class="no-data">No DeFi positions found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
@@ -465,5 +471,15 @@ export default {
   color: #ff4444;
   max-width: 800px;
   margin: 20px auto;
+}
+
+.beta-notice {
+  background: rgba(66, 185, 131, 0.1);
+  border-left: 4px solid #42b983;
+  padding: 12px 20px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  color: #42b983;
+  font-size: 0.9em;
 }
 </style> 

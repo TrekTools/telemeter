@@ -13,22 +13,35 @@
     
     <div class="controls-container">
       <div class="beta-notice">
-        ⓘ Note: While beta evaluation is ongoing, token values are currently updated once per day.
+        ⓘ Note: While beta evaluation is ongoing, token values are currently updated hourly.
       </div>
       
-      <div class="currency-toggle">
-        <button 
-          :class="['toggle-btn', { active: displayCurrency === 'USD' }]"
-          @click="displayCurrency = 'USD'"
-        >
-          USD
-        </button>
-        <button 
-          :class="['toggle-btn', { active: displayCurrency === 'SEI' }]"
-          @click="displayCurrency = 'SEI'"
-        >
-          SEI
-        </button>
+      <div class="controls-right">
+        <div class="toggle-switch">
+          <label class="switch">
+            <input 
+              type="checkbox" 
+              v-model="hideZeroValues"
+            >
+            <span class="slider"></span>
+          </label>
+          <span class="toggle-label">Hide $0 Values</span>
+        </div>
+
+        <div class="currency-toggle">
+          <button 
+            :class="['toggle-btn', { active: displayCurrency === 'USD' }]"
+            @click="displayCurrency = 'USD'"
+          >
+            USD
+          </button>
+          <button 
+            :class="['toggle-btn', { active: displayCurrency === 'SEI' }]"
+            @click="displayCurrency = 'SEI'"
+          >
+            SEI
+          </button>
+        </div>
       </div>
     </div>
     
@@ -159,6 +172,7 @@ export default {
       poolPositions: [],
       jellyPositions: [],
       yeiPositions: [],
+      hideZeroValues: true,
     }
   },
 
@@ -242,6 +256,11 @@ export default {
           token.name.toLowerCase().includes(query) ||
           token.walletLabel.toLowerCase().includes(query)
         );
+      }
+
+      // Add zero value filter
+      if (this.hideZeroValues) {
+        result = result.filter(token => token.calculatedValue > 0);
       }
 
       // Sort the results
@@ -920,5 +939,80 @@ export default {
 .beta-notice {
   flex: 1;
   margin: 0;
+}
+
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-label {
+  color: #fff;
+  font-size: 0.9em;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #42b983;
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+@media (max-width: 768px) {
+  .controls-right {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .toggle-switch {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 </style>
