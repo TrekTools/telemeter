@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <div id="app" :class="currentTheme">
+    <div id="app" :class="[currentTheme, 'app-container']">
       <router-view 
         :wallet-connected="isConnected"
         :wallet-address="walletAddress"
@@ -76,7 +76,7 @@
             v-model="drawer"
             temporary
             location="bottom"
-            :height="400"
+            :height="drawerHeight"
           >
             <div class="drawer-content">
               <router-link to="/" class="drawer-link" @click="closeDrawer">Home</router-link>
@@ -94,6 +94,11 @@
                 <router-link to="/profile" class="drawer-link" @click="closeDrawer">Profile</router-link>
                 <router-link to="/warp" class="drawer-link" @click="closeDrawer">$WARP</router-link>
               </template>
+              
+              <!-- Add SEI price to mobile drawer -->
+              <div class="drawer-link sei-price-mobile">
+                1 SEI = ${{ formatNumber(seiPrice, 4) }}
+              </div>
             </div>
           </v-navigation-drawer>
           
@@ -482,6 +487,9 @@ export default {
         this.tacCount > 0 || 
         this.warpTokenBalance >= 1000000 // 1 million WARP
       )
+    },
+    drawerHeight() {
+      return window.innerHeight * 0.7; // 70% of the screen height
     }
   }
 }
@@ -695,11 +703,12 @@ body {
   left: 0;
   right: 0;
   background-color: #2c2c2c;
-  padding: 10px;
+  padding: 15px;  /* Increased padding */
   display: flex;
   justify-content: center;
   gap: 20px;
   z-index: 1000;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2); /* Optional: adds subtle shadow */
 }
 
 .nav-link {
@@ -764,8 +773,9 @@ body {
   left: 0;
   right: 0;
   background-color: #2c2c2c;
-  padding: 10px;
+  padding: 15px;  /* Increased padding */
   z-index: 1000;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .drawer-toggle {
@@ -917,5 +927,16 @@ body {
   white-space: nowrap;
   cursor: default;
   user-select: none;
+}
+
+/* Add padding to main container to prevent toolbar overlap */
+.app-container {
+  padding-bottom: 80px; /* For desktop */
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding-bottom: 120px; /* More padding for mobile */
+  }
 }
 </style>

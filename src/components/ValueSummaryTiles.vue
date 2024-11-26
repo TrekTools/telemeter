@@ -149,15 +149,31 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .value-tiles {
+  .value-summary {
     flex-direction: column;
-    margin: 10px;
+    padding: 10px;
+    gap: 10px;
   }
 
   .value-tile {
-    width: 100%;
-    min-width: unset;
-    margin-bottom: 10px;
+    width: auto;
+    margin: 0;
+  }
+
+  .value-tile.total {
+    flex: 1;
+  }
+
+  .value {
+    font-size: 1.4em;
+  }
+
+  .value-tile.total .value {
+    font-size: 1.8em;
+  }
+
+  .value-tile h3 {
+    font-size: 1em;
   }
 }
 </style> 
