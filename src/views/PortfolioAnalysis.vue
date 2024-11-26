@@ -4,6 +4,7 @@
     
     <ValueSummaryTiles 
       :token-value="totalTokenValue"
+      :defi-value="totalDefiValue"
       :nft-value="totalNftValue"
       :delegation-value="delegationValue"
       :display-currency="displayCurrency"
@@ -155,12 +156,16 @@ export default {
       seiUsdPrice: 0,
       delegations: [],
       displayCurrency: 'USD',
+      poolPositions: [],
+      jellyPositions: [],
+      yeiPositions: [],
     }
   },
 
   computed: {
     ...mapState({
-      excludedWallets: state => state.preferences.excludedWallets
+      excludedWallets: state => state.preferences.excludedWallets,
+      defiPositions: state => state.defiPositions
     }),
 
     filteredWallets() {
@@ -173,13 +178,6 @@ export default {
       return this.tokens.map(token => {
         const priceEntry = this.prices[token.address?.toLowerCase()]
         
-        console.log('Token price lookup:', {
-          token: token.name,
-          address: token.address,
-          priceFound: !!priceEntry,
-          price: priceEntry?.PriceUSD
-        })
-
         return {
           ...token,
           priceUSD: priceEntry?.PriceUSD || 0
@@ -296,6 +294,19 @@ export default {
         this.tacCount > 0 || 
         this.warpTokenBalance >= 1000000
       )
+    },
+    totalDefiValue() {
+      // Add debugging
+      console.log('DeFi Positions in Portfolio:', this.defiPositions);
+      
+      const total = this.defiPositions?.reduce((sum, position) => {
+        const value = parseFloat(position.calculatedValue) || 0;
+        console.log(`Position ${position.name}: $${value}`);
+        return sum + value;
+      }, 0) || 0;
+      
+      console.log('Total DeFi Value:', total);
+      return total;
     }
   },
 
@@ -513,8 +524,68 @@ export default {
       }, 0)
     },
 
+    async fetchPoolPositions(evmAddress, walletLabel) {
+      try {
+        // Fetch DragonSwap pools only (removing farms for now)
+        const poolsResponse = await fetch(`https://sei-api.dragonswap.app/api/v1/user/${evmAddress}/pools`);
+        const poolsData = await poolsResponse.json();
+
+        // Fetch Jellyverse data
+        const jellyverseResponse = await fetch('https://graph.mainnet.jellyverse.org/subgraphs/name/jelly/verse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query {
+                user(id: "${evmAddress.toLowerCase()}") {
+                  sharesOwned {
+                    balance
+                    poolId {
+                      name
+                      address
+                      symbol
+                      tokensList
+                    }
+                  }
+                }
+              }
+            `
+          })
+        });
+        const jellyverseData = await jellyverseResponse.json();
+
+        // Process positions
+        return {
+          dragonSwap: poolsData.status === 'ok' ? poolsData.pools.map(pool => ({
+            ...pool,
+            walletLabel,
+            tokens: poolsData.tokens,
+            id: `dragon-${evmAddress}-${pool.pool_address}`,
+            type: 'DragonSwap',
+            name: pool.poolName || `${pool.tokens?.[0]?.symbol || '-'}/${pool.tokens?.[1]?.symbol || '-'}`,
+            adjustedBalance: parseFloat(pool.first_token_amount) || 0,
+            priceUSD: parseFloat(pool.total_liquidity_usd) || 0,
+            calculatedValue: parseFloat(pool.total_liquidity_usd) || 0
+          })) : [],
+          jellyverse: jellyverseData.data?.user?.sharesOwned?.map(share => ({
+            id: `jelly-${evmAddress}-${share.poolId.address}`,
+            walletLabel,
+            type: 'Jellyverse',
+            name: share.poolId.name,
+            address: share.poolId.address,
+            adjustedBalance: parseFloat(share.balance) || 0,
+            priceUSD: 0,
+            calculatedValue: 0
+          })) || []
+        };
+      } catch (error) {
+        console.error(`Error fetching pool data for ${evmAddress}:`, error);
+        return { dragonSwap: [], jellyverse: [] };
+      }
+    },
+
     async fetchAllData() {
-      this.loading = true
+      this.loading = true;
       try {
         await this.fetchSeiPrice()
         
@@ -537,31 +608,42 @@ export default {
         // Then use filteredWallets computed property for processing
         const walletsToProcess = this.filteredWallets
         
-        // Create an array of promises for fetching tokens from filtered wallets
+        // Create an array of promises for fetching tokens and DeFi positions
         const tokenPromises = walletsToProcess.flatMap(wallet => [
           this.fetchTokens(wallet.evm_hash, 'ERC-20'),
           this.fetchTokens(wallet.sei_hash, 'CW-20'),
-          this.fetchTokens(wallet.sei_hash, 'NATIVE')
-        ])
+          this.fetchTokens(wallet.sei_hash, 'NATIVE'),
+          this.fetchPoolPositions(wallet.evm_hash, this.internalWalletLabels[wallet.evm_hash] || this.truncateAddress(wallet.evm_hash))
+        ]);
 
-        // Wait for all token fetches to complete
-        const allTokenResults = await Promise.all(tokenPromises)
+        const allTokenResults = await Promise.all(tokenPromises);
 
         // Process and combine all tokens
-        this.tokens = allTokenResults.flatMap((tokens, index) => {
-          const walletIndex = Math.floor(index / 3)
-          const wallet = walletsToProcess[walletIndex]
-          const tokenType = ['ERC-20', 'CW-20', 'NATIVE'][index % 3]
-          const walletAddress = tokenType === 'ERC-20' ? wallet.evm_hash : wallet.sei_hash
+        this.tokens = allTokenResults.flatMap((result, index) => {
+          const walletIndex = Math.floor(index / 4);
+          const wallet = walletsToProcess[walletIndex];
+          const typeIndex = index % 4;
 
-          return tokens.map(t => ({
+          if (typeIndex === 3) { // DeFi positions
+            const positions = result;
+            return [
+              ...positions.dragonSwap,
+              ...positions.jellyverse
+            ];
+          }
+
+          // Regular token processing
+          const tokenType = ['ERC-20', 'CW-20', 'NATIVE'][typeIndex];
+          const walletAddress = tokenType === 'ERC-20' ? wallet.evm_hash : wallet.sei_hash;
+
+          return result.map(t => ({
             ...t.token,
             value: t.value,
             type: tokenType,
             walletAddress: walletAddress,
             walletLabel: this.internalWalletLabels[walletAddress] || this.truncateAddress(walletAddress)
-          }))
-        })
+          }));
+        });
 
         // Update NFTs for filtered wallets
         const nftPromises = walletsToProcess.map(async wallet => {

@@ -9,6 +9,7 @@ import AboutPage from '../views/AboutPage.vue'
 import TrendAnalysis from '../views/TrendAnalysis.vue'
 import WarpToken from '@/views/WarpToken.vue'
 import DelegationsAnalysis from '@/views/DelegationsAnalysis.vue'
+import DefiAnalysis from '../views/DefiAnalysis.vue'
 import { trackPageView } from '../analytics'
 
 const routes = [
@@ -72,6 +73,12 @@ const routes = [
     component: DelegationsAnalysis,
     props: true,
     meta: { requiresNFT: true, title: 'Telemeter - Delegation Analysis' }
+  },
+  {
+    path: '/defi',
+    name: 'DefiAnalysis',
+    component: DefiAnalysis,
+    props: true
   }
 ]
 

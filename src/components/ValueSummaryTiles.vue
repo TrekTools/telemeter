@@ -5,6 +5,10 @@
       <div class="value">{{ formatValue(tokenValue) }}</div>
     </div>
     <div class="value-tile">
+      <h3>DeFi Value</h3>
+      <div class="value">{{ formatValue(defiValue) }}</div>
+    </div>
+    <div class="value-tile">
       <h3>NFT Value</h3>
       <div class="value">{{ formatValue(nftValue) }}</div>
     </div>
@@ -28,6 +32,10 @@ export default {
       type: Number,
       default: 0
     },
+    defiValue: {
+      type: Number,
+      default: 0
+    },
     nftValue: {
       type: Number,
       default: 0
@@ -48,7 +56,7 @@ export default {
 
   computed: {
     totalValue() {
-      return this.tokenValue + this.nftValue + this.delegationValue
+      return this.tokenValue + this.defiValue + this.nftValue + this.delegationValue
     }
   },
 

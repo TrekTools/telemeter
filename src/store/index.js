@@ -5,7 +5,8 @@ export default createStore({
   state: {
     preferences: {
       excludedWallets: new Set()
-    }
+    },
+    defiPositions: []
   },
 
   mutations: {
@@ -19,6 +20,12 @@ export default createStore({
       } else {
         state.preferences.excludedWallets.add(walletUuid)
       }
+    },
+    setDefiPositions(state, positions) {
+      console.log('Setting DeFi positions with total value:', 
+        positions.reduce((sum, pos) => sum + (pos.calculatedValue || 0), 0)
+      );
+      state.defiPositions = positions;
     }
   },
 

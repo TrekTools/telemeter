@@ -40,12 +40,7 @@
           <router-link to="/about" class="nav-link">About</router-link>
           <router-link to="/guide" class="nav-link">Guide</router-link>
           
-          <!-- Add SEI price indicator -->
-          <div class="sei-price-indicator">
-            1 SEI = ${{ formatNumber(seiPrice, 4) }}
-          </div>
-
-          <!-- Add terminal indicator -->
+          <!-- Terminal indicator -->
           <div v-if="terminalHidden" 
                class="terminal-indicator" 
                @click="showTerminal">
@@ -56,13 +51,19 @@
           <!-- Protected routes only shown when NFTs are owned -->
           <template v-if="hasAppAccess">
             <router-link to="/portfolio" class="nav-link">Portfolio</router-link>
-            <router-link to="/delegations" class="nav-link">Delegations</router-link>
-            <router-link to="/nft" class="nav-link">NFT Analysis</router-link>
+            <router-link to="/defi" class="nav-link">DeFi</router-link>
+            <router-link to="/nft" class="nav-link">NFTs</router-link>
+            <router-link to="/delegations" class="nav-link">Staking</router-link>
             <router-link to="/coins" class="nav-link">Coins</router-link>
             <router-link to="/trends" class="nav-link">Market Trends</router-link>
             <router-link to="/profile" class="nav-link">Profile</router-link>
             <router-link to="/warp" class="nav-link">$WARP</router-link>
           </template>
+          
+          <!-- SEI price indicator moved to end -->
+          <div class="sei-price-indicator">
+            1 SEI = ${{ formatNumber(seiPrice, 4) }}
+          </div>
         </nav>
 
         <!-- Mobile Navigation with Drawer -->
@@ -85,8 +86,9 @@
               <!-- Protected routes in drawer -->
               <template v-if="hasAppAccess">
                 <router-link to="/portfolio" class="drawer-link" @click="closeDrawer">Portfolio</router-link>
-                <router-link to="/delegations" class="drawer-link" @click="closeDrawer">Delegations</router-link>
-                <router-link to="/nft" class="drawer-link" @click="closeDrawer">NFT Analysis</router-link>
+                <router-link to="/defi" class="drawer-link" @click="closeDrawer">DeFi</router-link>
+                <router-link to="/nft" class="drawer-link" @click="closeDrawer">NFTs</router-link>
+                <router-link to="/delegations" class="drawer-link" @click="closeDrawer">Staking</router-link>
                 <router-link to="/coins" class="drawer-link" @click="closeDrawer">Coins</router-link>
                 <router-link to="/trends" class="drawer-link" @click="closeDrawer">Market Trends</router-link>
                 <router-link to="/profile" class="drawer-link" @click="closeDrawer">Profile</router-link>
