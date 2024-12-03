@@ -202,7 +202,9 @@ export default {
       const query = this.searchQuery.trim().toLowerCase();
 
       let groupedTokens = this.tokensWithPrices.reduce((acc, token) => {
-        const key = `${token.walletLabel.toLowerCase()}-${token.name.toLowerCase()}`;
+        const walletLabel = token.walletLabel ? token.walletLabel.toLowerCase() : '';
+        const name = token.name ? token.name.toLowerCase() : '';
+        const key = `${walletLabel}-${name}`;
         
         if (!acc[key]) {
           acc[key] = {
