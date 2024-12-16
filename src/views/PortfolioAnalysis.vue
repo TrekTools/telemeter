@@ -252,18 +252,22 @@ export default {
         calculatedValue: group.calculatedValue / group.count
       }));
 
-      // Apply search filter
-      if (query) {
-        result = result.filter(token => 
-          token.name.toLowerCase().includes(query) ||
-          token.walletLabel.toLowerCase().includes(query)
-        );
-      }
-
-      // Add zero value filter
-      if (this.hideZeroValues) {
-        result = result.filter(token => token.calculatedValue > 0);
-      }
+      // Apply filters
+      result = result.filter(token => {
+        // First apply zero value filter if enabled
+        if (this.hideZeroValues && token.calculatedValue <= 0) {
+          return false;
+        }
+        
+        // Then apply search filter if there's a query
+        if (query) {
+          return token.name?.toLowerCase().includes(query) ||
+                 token.walletLabel?.toLowerCase().includes(query) ||
+                 token.type?.toLowerCase().includes(query);
+        }
+        
+        return true;
+      });
 
       // Sort the results
       result.sort((a, b) => {
