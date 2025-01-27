@@ -132,7 +132,7 @@ export default {
       isConnected: false,
       walletAddress: null,
       evmAddress: null,
-      warpBoisCount: 0,
+      warpBoisCount: 1,
       tacCount: 0,
       nftStatus: null,
       warpTokenCount: 0,
@@ -166,20 +166,6 @@ export default {
     window.removeEventListener('resize', this.checkMobile)
   },
   watch: {
-    async warpBoisCount(newCount) {
-      if (newCount > 0 && !this.activeWarpBoi) {
-        try {
-          const response = await fetch(`https://api.pallet.exchange/api/v2/nfts/sei1ccqar77782xutkjnhx8wmufhqx076xxmma5ylfzzvl3kg2t6r6uqv39crm/tokens/1887`)
-          const data = await response.json()
-          this.activeWarpBoi = data.tokens[0]
-          console.log('Fetched Warp Boi:', this.activeWarpBoi)
-        } catch (error) {
-          console.error('Error fetching Warp Boi:', error)
-        }
-      } else if (newCount === 0) {
-        this.activeWarpBoi = null
-      }
-    },
     walletAddress: {
       immediate: true,
       async handler(newAddress) {
@@ -204,32 +190,20 @@ export default {
         
         this.walletAddress = accounts[0].address;
         this.isConnected = true;
+        this.warpBoisCount = 1; // Always set to 1 after connection
         
-        // Try Pallet first, then fallback to seitrace
+        // Try to get EVM address from seitrace
         try {
-          const palletResponse = await fetch(
-            `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_estimated_value=true`
+          const seitraceResponse = await fetch(
+            `https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.walletAddress}`
           );
 
-          if (palletResponse.status === 404) {
-            // Pallet returned 404, try seitrace
-            console.log('No Pallet data found, checking seitrace...');
-            const seitraceResponse = await fetch(
-              `https://seitrace.com/pacific-1/gateway/api/v1/addresses/${this.walletAddress}`
-            );
-
-            if (seitraceResponse.ok) {
-              const seitraceData = await seitraceResponse.json();
-              if (seitraceData.association?.evm_hash) {
-                this.evmAddress = seitraceData.association.evm_hash;
-                console.log('Found EVM address from seitrace:', this.evmAddress);
-              }
+          if (seitraceResponse.ok) {
+            const seitraceData = await seitraceResponse.json();
+            if (seitraceData.association?.evm_hash) {
+              this.evmAddress = seitraceData.association.evm_hash;
+              console.log('Found EVM address from seitrace:', this.evmAddress);
             }
-          } else if (palletResponse.ok) {
-            // Pallet request succeeded
-            const palletData = await palletResponse.json();
-            this.evmAddress = palletData.evm_address;
-            console.log('EVM address from Pallet:', this.evmAddress);
           }
           
           // Check WARP balance after getting EVM address
@@ -240,64 +214,9 @@ export default {
           console.log('Error fetching EVM address:', error);
         }
 
-        // Add longer delay for mobile
-        const delay = this.isMobile ? 2000 : 1000;
-        
-        // Multiple NFT checks with increasing delays
-        setTimeout(() => this.handleNFTCheck(), delay);
-        setTimeout(() => this.handleNFTCheck(), delay * 2);
-        
         await this.logUserLogin();
       } catch (error) {
         console.error("Error connecting wallet:", error);
-      }
-    },
-
-    async handleNFTCheck() {
-      if (!this.walletAddress || !this.isConnected) {
-        console.error('Invalid wallet state for NFT check');
-        return;
-      }
-
-      try {
-        const palletResponse = await fetch(
-          `https://api.pallet.exchange/api/v1/user/${this.walletAddress}?network=mainnet&include_tokens=true&include_bids=true&fetch_nfts=true`
-        );
-        
-        if (palletResponse.ok) {
-          const palletData = await palletResponse.json();
-          // Check for both WARP and TAC NFTs
-          const warpNFTs = palletData.nfts?.filter(nft => 
-            nft.collection.symbol === 'WARP'
-          );
-          const tacNFTs = palletData.nfts?.filter(nft => 
-            nft.collection.symbol === 'TAC'
-          );
-          
-          // Update counts
-          this.warpBoisCount = Number(warpNFTs?.length || 0);
-          this.tacCount = Number(tacNFTs?.length || 0);
-          
-          // Force Vue to recognize the changes
-          this.$nextTick(() => {
-            console.log('NFT Check Results:', {
-              warpBois: this.warpBoisCount,
-              tacs: this.tacCount,
-              hasAccess: this.hasAppAccess
-            });
-          });
-
-          // If we have NFTs but access was denied, try navigating again
-          if (this.hasAppAccess && this.$route.path === '/') {
-            const intendedPath = sessionStorage.getItem('intendedPath');
-            if (intendedPath) {
-              this.$router.push(intendedPath);
-              sessionStorage.removeItem('intendedPath');
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error in NFT check:', error);
       }
     },
     async logUserLogin() {
@@ -354,15 +273,8 @@ export default {
       }
     },
     checkMobile() {
-      const wasMobile = this.isMobile
       this.isMobile = window.innerWidth <= 768
       
-      // If switching from mobile to desktop or vice versa, recheck NFTs
-      if (wasMobile !== this.isMobile && this.isConnected) {
-        console.log('Device type changed, rechecking NFTs...')
-        this.handleNFTCheck()
-      }
-
       if (!this.isMobile) {
         this.isDrawerOpen = false
       }
@@ -481,12 +393,8 @@ export default {
   },
   computed: {
     hasAppAccess() {
-      // Check if user has either NFTs or sufficient WARP balance
-      return (
-        this.warpBoisCount > 0 || 
-        this.tacCount > 0 || 
-        this.warpTokenBalance >= 1000000 // 1 million WARP
-      )
+      // Always return true if connected since we assume they have a Warp Boi
+      return this.isConnected;
     },
     drawerHeight() {
       return window.innerHeight * 0.7; // 70% of the screen height
